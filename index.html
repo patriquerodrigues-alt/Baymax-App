@@ -10,6 +10,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,%3Csvg%20viewBox%3D%270%200%20512%20512%27%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%3E%3Crect%20x%3D%270%27%20y%3D%270%27%20width%3D%27512%27%20height%3D%27512%27%20rx%3D%27118%27%20fill%3D%27%23F7D9DA%27%2F%3E%3Cellipse%20cx%3D%27256%27%20cy%3D%27286%27%20rx%3D%27164%27%20ry%3D%27156%27%20fill%3D%27%23FFFFFF%27%20stroke%3D%27%23E7EEF1%27%20stroke-width%3D%276%27%2F%3E%3Cellipse%20cx%3D%27205%27%20cy%3D%27258%27%20rx%3D%2720%27%20ry%3D%2726%27%20fill%3D%27%232C2A28%27%2F%3E%3Cellipse%20cx%3D%27307%27%20cy%3D%27258%27%20rx%3D%2720%27%20ry%3D%2726%27%20fill%3D%27%232C2A28%27%2F%3E%3Cpath%20d%3D%27M%20196%20336%20Q%20256%20366%20316%20336%27%20stroke%3D%27%232C2A28%27%20stroke-width%3D%2711%27%20fill%3D%27none%27%20stroke-linecap%3D%27round%27%2F%3E%3Ccircle%20cx%3D%27378%27%20cy%3D%27120%27%20r%3D%2746%27%20fill%3D%27%23D8434A%27%2F%3E%3Cpath%20d%3D%27M378%20138c-16-11-27-20-27-33%200-9%207-16%2016-16%206%200%2011%203%2014%208%203-5%208-8%2014-8%209%200%2016%207%2016%2016%200%2013-11%2022-27%2033z%27%20fill%3D%27%23FFFFFF%27%2F%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --bg: #FAF6EF;
@@ -312,7 +313,7 @@
   .task-desc{ font-size:12.5px; color:var(--ink-soft); font-weight:600; margin-top:3px; margin-bottom:6px; line-height:1.35; word-break:break-word; }
 
   /* ---------- KANBAN ---------- */
-  .kanban-board{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 4px; }
+  .kanban-board{ display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 4px; }
   @media (max-width: 980px){ .kanban-board{ grid-template-columns: 1fr; } }
   .kanban-col{ background: var(--bg); border-radius: var(--radius-md); padding:14px; display:flex; flex-direction:column; min-height: 460px; }
   .kanban-col-header{ display:flex; align-items:center; gap:8px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14.5px; margin-bottom:12px; padding:0 2px; }
@@ -433,6 +434,35 @@
   }
   .ics-btn:hover{ background: var(--slate); color:#fff; }
   .ics-note{ font-size:10.5px; color: var(--ink-soft); font-weight:600; margin: 0 0 14px; line-height:1.4; }
+  .google-btn{
+    border:none; background: var(--curacau); color:#fff; font-size:12px; font-weight:800;
+    padding:9px 12px; border-radius: var(--radius-sm); cursor:pointer; width:100%; margin-bottom:6px;
+    transition: background 0.2s; font-family:'Nunito', sans-serif;
+  }
+  .google-btn:hover{ background: var(--curacau-deep); }
+  .google-btn.secondary{ background: var(--slate-soft); color: var(--ink-soft); }
+  .google-btn.secondary:hover{ background: var(--slate); color:#fff; }
+  .google-btn.on{ background: var(--good); }
+  .google-tag{
+    display:inline-block; background:var(--curacau); color:#fff; font-size:9px; font-weight:800;
+    width:14px; height:14px; line-height:14px; text-align:center; border-radius:50%; vertical-align:middle; margin-left:4px;
+  }
+  .kanban-add-col-row{ display:flex; align-items:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  #addColumnForm{ display:none; gap:8px; align-items:center; }
+  #addColumnForm input{ flex:1; min-width:140px; }
+  .kanban-col-del{
+    border:none; background:none; color:var(--ink-soft); opacity:0.4; font-size:12px; cursor:pointer;
+    margin-left:4px; padding:1px 4px; transition:opacity 0.15s, color 0.15s;
+  }
+  .kanban-col-header:hover .kanban-col-del{ opacity:1; }
+  .kanban-col-del:hover{ color: var(--crit-red); }
+  .kanban-dot.purple{ background: var(--mirtilo); }
+  .kanban-dot.teal{ background: var(--curacau); }
+  .kanban-dot.orange{ background: var(--avela); }
+  .move-select{
+    font-size:11px; font-weight:700; padding:5px 8px; border-radius:100px; border:2px solid var(--slate-soft);
+    background:#fff; color:var(--ink-soft); cursor:pointer;
+  }
 
   /* ---------- COMPLETED HISTORY ---------- */
   .history-toggle{
@@ -549,18 +579,12 @@
       <button class="tab-btn" id="sortTimeBtn" data-sort="time">Horário</button>
     </div>
 
-    <div class="kanban-board">
-      <div class="kanban-col">
-        <div class="kanban-col-header"><span class="kanban-dot red"></span>Pendente <span class="kanban-count" id="countPending">0</span></div>
-        <div class="kanban-col-body" data-status="pending" id="colPending"></div>
-      </div>
-      <div class="kanban-col">
-        <div class="kanban-col-header"><span class="kanban-dot yellow"></span>Em Andamento <span class="kanban-count" id="countInprogress">0</span></div>
-        <div class="kanban-col-body" data-status="inprogress" id="colInprogress"></div>
-      </div>
-      <div class="kanban-col">
-        <div class="kanban-col-header"><span class="kanban-dot green"></span>Concluído <span class="kanban-count" id="countDone">0</span></div>
-        <div class="kanban-col-body" data-status="done" id="colDone"></div>
+    <div class="kanban-board" id="kanbanBoard"></div>
+    <div class="kanban-add-col-row">
+      <button class="tab-btn" id="addColumnToggleBtn">+ Nova etapa</button>
+      <div id="addColumnForm">
+        <input type="text" id="newColumnName" placeholder="Nome da nova etapa (ex: Revisão)" maxlength="30">
+        <button class="icon-btn" id="confirmAddColumnBtn" title="Adicionar etapa">+</button>
       </div>
     </div>
   </section>
@@ -595,8 +619,10 @@
         <input type="text" id="agendaInput" placeholder="Compromisso...">
         <button class="icon-btn" id="addAgendaBtn" title="Adicionar compromisso">+</button>
       </div>
+      <button class="google-btn" id="googleConnectBtn">🔗 Conectar Google Agenda</button>
+      <button class="google-btn secondary" id="googleImportBtn">📥 Importar agenda de hoje</button>
       <button class="ics-btn" id="exportIcsBtn">⬇ Exportar compromissos de hoje (.ics)</button>
-      <p class="ics-note">Sincronização automática com o Google Agenda não é possível num arquivo local — mas você pode importar este .ics em "Google Agenda → Configurações → Importar e exportar".</p>
+      <p class="ics-note">Conectando ao Google, os compromissos de hoje entram automaticamente. Sem conectar, use a exportação .ics para importar manualmente no Google Agenda.</p>
       <ul class="list" id="agendaList"></ul>
     </section>
   </div>
@@ -627,7 +653,12 @@
 <script>
 (function(){
   const STORAGE_KEY = 'baymax-data';
-  let state = { tasks: [], notes: [], agenda: [], recurring: [] };
+  let state = { tasks: [], notes: [], agenda: [], recurring: [], kanbanColumns: null };
+  const DEFAULT_KANBAN_COLUMNS = [
+    { id: 'pending', label: 'Pendente', dot: 'red' },
+    { id: 'inprogress', label: 'Em Andamento', dot: 'yellow' },
+    { id: 'done', label: 'Concluído', dot: 'green' }
+  ];
   let loaded = false;
   let editingNoteId = null;
   let editingTaskId = null;
@@ -696,14 +727,22 @@
           if(n.edited === undefined) n.edited = false;
         });
         state.recurring.forEach(r => { if(r.time === undefined) r.time = null; });
+        if(!state.kanbanColumns || !Array.isArray(state.kanbanColumns) || state.kanbanColumns.length === 0){
+          state.kanbanColumns = JSON.parse(JSON.stringify(DEFAULT_KANBAN_COLUMNS));
+        }
+        state.agenda.forEach(a => { if(a.fromGoogle === undefined) a.fromGoogle = false; });
       }
     }catch(e){
       console.error('Erro ao carregar dados do Baymax:', e);
+    }
+    if(!state.kanbanColumns || !Array.isArray(state.kanbanColumns) || state.kanbanColumns.length === 0){
+      state.kanbanColumns = JSON.parse(JSON.stringify(DEFAULT_KANBAN_COLUMNS));
     }
     loaded = true;
     lastKnownDate = todayStr();
     ensureTodayRecurringInstances();
     renderLegend();
+    renderKanbanSkeleton();
     renderAll();
   }
 
@@ -923,13 +962,14 @@
     const isOpen = expandedChecklists.has(t.id);
     const subtasks = t.subtasks || [];
     const doneCount = subtasks.filter(s => s.done).length;
+    const otherCols = state.kanbanColumns.filter(c => c.id !== status);
     return `
       <div class="kanban-card" draggable="true" data-id="${t.id}">
         <div class="kanban-card-top">
           <div class="checkbox ${status==='done' ? 'checked' : ''}" data-id="${t.id}" data-action="toggle-done">
             <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
-          <div class="kanban-card-text ${status==='done' ? 'done' : ''}">${escapeHtml(t.text)}${t.recurringId ? '<span class="recur-badge" title="Tarefa recorrente">🔁</span>' : ''}</div>
+          <div class="kanban-card-text ${status==='done' ? 'done' : ''}">${escapeHtml(t.text)}${t.recurringId ? '<span class="recur-badge" title="Tarefa recorrente">🔁</span>' : ''}${t.googleEventId ? '<span class="google-tag" title="Sincronizada com o Google Agenda">G</span>' : ''}</div>
           <div class="kanban-card-actions">
             <button class="kanban-mini-btn" data-id="${t.id}" data-action="edit-task" title="Editar">✎</button>
             <button class="kanban-mini-btn" data-id="${t.id}" data-action="delete-task" title="Excluir">✕</button>
@@ -965,9 +1005,11 @@
           </div>
         </div>
         <div class="kanban-move-row">
-          ${status==='pending' ? `<button class="kanban-move-btn" data-id="${t.id}" data-action="move-inprogress">Iniciar →</button>` : ''}
-          ${status==='inprogress' ? `<button class="kanban-move-btn" data-id="${t.id}" data-action="move-pending">← Voltar</button><button class="kanban-move-btn" data-id="${t.id}" data-action="move-done">Concluir ✓</button>` : ''}
-          ${status==='done' ? `<button class="kanban-move-btn" data-id="${t.id}" data-action="move-pending">↺ Reabrir</button>` : ''}
+          <select class="move-select" data-task-id="${t.id}">
+            <option value="">Mover para...</option>
+            ${otherCols.map(c => `<option value="${c.id}">${escapeHtml(c.label)}</option>`).join('')}
+          </select>
+          <button class="kanban-move-btn" data-id="${t.id}" data-action="send-google" title="Enviar esta tarefa ao Google Agenda">📤 Agenda</button>
         </div>
       </div>
     `;
@@ -989,15 +1031,56 @@
       (sorted.length > 15 ? `<div class="kanban-more-note">+ ${sorted.length - 15} mais no histórico completo abaixo ⬇</div>` : '');
   }
 
+  function renderKanbanSkeleton(){
+    const board = $('kanbanBoard');
+    board.innerHTML = state.kanbanColumns.map(c => `
+      <div class="kanban-col">
+        <div class="kanban-col-header">
+          <span class="kanban-dot ${c.dot}"></span>${escapeHtml(c.label)}
+          <span class="kanban-count" id="count-${c.id}">0</span>
+          ${(c.id !== 'pending' && c.id !== 'inprogress' && c.id !== 'done') ? `<button class="kanban-col-del" data-col-id="${c.id}" data-action="delete-column" title="Remover etapa">✕</button>` : ''}
+        </div>
+        <div class="kanban-col-body" data-status="${c.id}" id="colBody-${c.id}"></div>
+      </div>
+    `).join('');
+  }
+
   function renderKanban(){
-    const cols = { pending: [], inprogress: [], done: [] };
+    const cols = {};
+    state.kanbanColumns.forEach(c => { cols[c.id] = []; });
     state.tasks.forEach(t => { (cols[t.status] = cols[t.status] || []).push(t); });
-    $('countPending').textContent = cols.pending.length;
-    $('countInprogress').textContent = cols.inprogress.length;
-    $('countDone').textContent = cols.done.length;
-    $('colPending').innerHTML = renderDayGroupedColumn(cols.pending, 'pending');
-    $('colInprogress').innerHTML = renderDayGroupedColumn(cols.inprogress, 'inprogress');
-    $('colDone').innerHTML = renderDoneColumn(cols.done);
+    state.kanbanColumns.forEach(c => {
+      const countEl = $('count-' + c.id);
+      const bodyEl = $('colBody-' + c.id);
+      if(!countEl || !bodyEl) return;
+      const list = cols[c.id] || [];
+      countEl.textContent = list.length;
+      bodyEl.innerHTML = c.id === 'done' ? renderDoneColumn(list) : renderDayGroupedColumn(list, c.id);
+    });
+  }
+
+  function addColumn(){
+    const input = $('newColumnName');
+    const label = input.value.trim();
+    if(!label) return;
+    const dots = ['purple', 'teal', 'orange'];
+    const customCount = state.kanbanColumns.filter(c => !['pending','inprogress','done'].includes(c.id)).length;
+    const newCol = { id: 'col_' + uid(), label, dot: dots[customCount % dots.length] };
+    const doneIndex = state.kanbanColumns.findIndex(c => c.id === 'done');
+    state.kanbanColumns.splice(doneIndex >= 0 ? doneIndex : state.kanbanColumns.length, 0, newCol);
+    input.value = '';
+    $('addColumnForm').style.display = 'none';
+    saveData();
+    renderKanbanSkeleton();
+    renderKanban();
+  }
+  function deleteColumn(colId){
+    if(!confirm('Remover esta etapa? As tarefas nela voltarão para "Pendente".')) return;
+    state.tasks.forEach(t => { if(t.status === colId) t.status = 'pending'; });
+    state.kanbanColumns = state.kanbanColumns.filter(c => c.id !== colId);
+    saveData();
+    renderKanbanSkeleton();
+    renderAll();
   }
 
   // ---------- COMPLETED HISTORY ----------
@@ -1162,7 +1245,8 @@
     list.innerHTML = sorted.map(a => `
       <li class="agenda-item ${next && a.id === next.id ? 'next' : ''}">
         <div class="agenda-time">${a.time}</div>
-        <div class="agenda-text">${escapeHtml(a.text)}${next && a.id === next.id ? '<span class="next-tag">Próximo</span>' : ''}</div>
+        <div class="agenda-text">${escapeHtml(a.text)}${a.fromGoogle ? '<span class="google-tag" title="Importado do Google Agenda">G</span>' : ''}${next && a.id === next.id ? '<span class="next-tag">Próximo</span>' : ''}</div>
+        <button class="del-btn" data-id="${a.id}" data-action="create-task-from-agenda" title="Criar tarefa a partir deste compromisso">➕</button>
         <button class="del-btn" data-id="${a.id}" data-action="delete-agenda" title="Excluir">✕</button>
       </li>
     `).join('');
@@ -1196,6 +1280,134 @@
     });
     ics += 'END:VCALENDAR\r\n';
     downloadFile('baymax-agenda.ics', ics, 'text/calendar');
+  }
+
+  // ---------- GOOGLE CALENDAR ----------
+  // Preencha com o Client ID gerado no seu próprio Google Cloud Console.
+  // Veja o guia "como-conectar-google-agenda.md" para o passo a passo.
+  const GOOGLE_CLIENT_ID = 'COLE_SEU_CLIENT_ID_AQUI.apps.googleusercontent.com';
+
+  let googleAccessToken = null;
+  let googleTokenClient = null;
+
+  function isGoogleConfigured(){
+    return GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('COLE_SEU_CLIENT_ID_AQUI');
+  }
+  function initGoogleAuth(){
+    if(!isGoogleConfigured() || !window.google || !google.accounts) return false;
+    if(googleTokenClient) return true;
+    googleTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/calendar.events',
+      callback: (resp) => {
+        if(resp.error){
+          alert('Não foi possível conectar ao Google Agenda: ' + resp.error);
+          return;
+        }
+        googleAccessToken = resp.access_token;
+        updateGoogleButton();
+        showToast({ text: 'Conectado ao Google Agenda! Importando os compromissos de hoje...' });
+        importGoogleAgendaToday();
+      }
+    });
+    return true;
+  }
+  function connectGoogleCalendar(){
+    if(!isGoogleConfigured()){
+      alert('Antes de conectar, configure o Client ID do Google no início do arquivo baymax.html (procure por GOOGLE_CLIENT_ID). Veja o guia "como-conectar-google-agenda.md" para o passo a passo completo.');
+      return;
+    }
+    if(!window.google || !google.accounts){
+      alert('A biblioteca do Google ainda está carregando. Aguarde um instante e tente novamente.');
+      return;
+    }
+    if(!googleTokenClient) initGoogleAuth();
+    if(googleTokenClient) googleTokenClient.requestAccessToken();
+  }
+  function updateGoogleButton(){
+    const btn = $('googleConnectBtn');
+    if(!btn) return;
+    if(googleAccessToken){ btn.textContent = '🔗 Google Agenda conectado'; btn.classList.add('on'); }
+    else { btn.textContent = '🔗 Conectar Google Agenda'; btn.classList.remove('on'); }
+  }
+  async function importGoogleAgendaToday(){
+    if(!googleAccessToken){
+      connectGoogleCalendar();
+      return;
+    }
+    const today = todayStr();
+    try{
+      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${today}T00:00:00Z&timeMax=${today}T23:59:59Z&singleEvents=true&orderBy=startTime`, {
+        headers: { Authorization: `Bearer ${googleAccessToken}` }
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      let imported = 0;
+      (data.items || []).forEach(ev => {
+        if(!ev.start) return;
+        let time = '00:00';
+        if(ev.start.dateTime){
+          const d = new Date(ev.start.dateTime);
+          time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+        const already = state.agenda.some(a => a.googleEventId === ev.id);
+        if(already) return;
+        state.agenda.push({ id: uid(), text: ev.summary || '(sem título)', time, fromGoogle: true, googleEventId: ev.id });
+        imported++;
+      });
+      saveData();
+      renderAgenda();
+      showToast({ text: imported > 0 ? `${imported} evento(s) importado(s) do Google Agenda!` : 'Nenhum evento novo encontrado para hoje.' });
+    }catch(e){
+      console.error(e);
+      alert('Erro ao importar do Google Agenda. Verifique se a Calendar API está ativada no seu projeto do Google Cloud.');
+    }
+  }
+  async function sendTaskToGoogleCalendar(taskId){
+    if(!googleAccessToken){
+      alert('Conecte-se ao Google Agenda primeiro (botão no card de Agenda).');
+      return;
+    }
+    const t = state.tasks.find(x => x.id === taskId);
+    if(!t) return;
+    const date = t.date || todayStr();
+    const time = t.time || '09:00';
+    const [h, m] = time.split(':').map(Number);
+    const startDate = new Date(`${date}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`);
+    const endDate = new Date(startDate.getTime() + 30 * 60000);
+    try{
+      const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: t.text,
+          description: t.description || '',
+          start: { dateTime: startDate.toISOString() },
+          end: { dateTime: endDate.toISOString() }
+        })
+      });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      t.googleEventId = data.id;
+      saveData();
+      showToast({ text: 'Tarefa enviada para o Google Agenda!' });
+      renderKanban();
+    }catch(e){
+      console.error(e);
+      alert('Erro ao enviar para o Google Agenda.');
+    }
+  }
+  function createTaskFromAgenda(agendaId){
+    const a = state.agenda.find(x => x.id === agendaId);
+    if(!a) return;
+    state.tasks.unshift({
+      id: uid(), text: a.text, description: a.fromGoogle ? 'Importado do Google Agenda' : '', complexity: 'moderada',
+      maxTime: null, time: a.time, status: 'pending', doneDate: null, date: todayStr(),
+      recurringId: null, created: Date.now(), subtasks: []
+    });
+    saveData();
+    renderAll();
+    showToast({ text: 'Tarefa criada a partir do compromisso!' });
   }
 
   // ---------- NOTIFICATIONS ----------
@@ -1434,6 +1646,16 @@
   $('addAgendaBtn').addEventListener('click', addAgenda);
   $('agendaInput').addEventListener('keydown', e => { if(e.key === 'Enter') addAgenda(); });
   $('exportIcsBtn').addEventListener('click', exportICS);
+  $('googleConnectBtn').addEventListener('click', connectGoogleCalendar);
+  $('googleImportBtn').addEventListener('click', importGoogleAgendaToday);
+  $('addColumnToggleBtn').addEventListener('click', () => {
+    const form = $('addColumnForm');
+    const isHidden = form.style.display === 'none' || form.style.display === '';
+    form.style.display = isHidden ? 'flex' : 'none';
+    if(isHidden) $('newColumnName').focus();
+  });
+  $('confirmAddColumnBtn').addEventListener('click', addColumn);
+  $('newColumnName').addEventListener('keydown', e => { if(e.key === 'Enter') addColumn(); });
 
   $('completedFilter').addEventListener('change', () => { $('completedDateFilter').value = ''; renderCompleted(); });
   $('completedDateFilter').addEventListener('change', renderCompleted);
@@ -1481,6 +1703,15 @@
     if(action === 'delete-subtask') deleteSubtask(taskId, subId);
     if(action === 'add-subtask') addSubtask(taskId);
     if(action === 'toggle-checklist') toggleChecklist(taskId);
+    if(action === 'send-google') sendTaskToGoogleCalendar(id);
+    if(action === 'create-task-from-agenda') createTaskFromAgenda(id);
+    if(action === 'delete-column') deleteColumn(el.getAttribute('data-col-id'));
+  });
+
+  document.addEventListener('change', (e) => {
+    if(e.target.classList && e.target.classList.contains('move-select') && e.target.value){
+      setTaskStatus(e.target.getAttribute('data-task-id'), e.target.value);
+    }
   });
 
   document.addEventListener('keydown', (e) => {
@@ -1560,6 +1791,7 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
+  window.addEventListener('load', () => { setTimeout(initGoogleAuth, 500); });
 
   loadData();
 })();
