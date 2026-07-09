@@ -680,7 +680,10 @@
 
   const $ = (id) => document.getElementById(id);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-  const todayStr = () => new Date().toISOString().slice(0,10);
+  const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   const COMPLEXITY_WEIGHT = { simples: 1, moderada: 2, complexa: 3, muitocomplexa: 4 };
@@ -1390,11 +1393,17 @@
       return;
     }
     const today = todayStr();
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
     try{
-      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${today}T00:00:00Z&timeMax=${today}T23:59:59Z&singleEvents=true&orderBy=startTime`, {
+      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(startOfDay.toISOString())}&timeMax=${encodeURIComponent(endOfDay.toISOString())}&singleEvents=true&orderBy=startTime`, {
         headers: { Authorization: `Bearer ${googleAccessToken}` }
       });
-      if(!res.ok) throw new Error('HTTP ' + res.status);
+      if(!res.ok){
+        const errText = await res.text().catch(() => '');
+        throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200));
+      }
       const data = await res.json();
       let imported = 0;
       const urlRegex = /(https?:\/\/[^\s<>")]+)/g;
@@ -1428,7 +1437,7 @@
       showToast({ text: imported > 0 ? `${imported} evento(s) importado(s) do Google Agenda, com e-mails e links inclusos!` : 'Nenhum evento novo encontrado para hoje.' });
     }catch(e){
       console.error(e);
-      alert('Erro ao importar do Google Agenda. Verifique se a Calendar API está ativada no seu projeto do Google Cloud.');
+      alert('Erro ao importar do Google Agenda: ' + e.message + '\n\nVerifique se a Calendar API está ativada no seu projeto do Google Cloud e se você está entre os "Test users" configurados.');
     }
   }
   async function sendTaskToGoogleCalendar(taskId){
@@ -1455,7 +1464,10 @@
           end: { dateTime: endDate.toISOString() }
         })
       });
-      if(!res.ok) throw new Error('HTTP ' + res.status);
+      if(!res.ok){
+        const errText = await res.text().catch(() => '');
+        throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200));
+      }
       const data = await res.json();
       t.googleEventId = data.id;
       const alreadyLinked = state.agenda.some(a => a.linkedTaskId === t.id);
@@ -1468,7 +1480,7 @@
       renderKanban();
     }catch(e){
       console.error(e);
-      alert('Erro ao enviar para o Google Agenda.');
+      alert('Erro ao enviar para o Google Agenda: ' + e.message);
     }
   }
   function createTaskFromAgenda(agendaId){
