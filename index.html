@@ -370,23 +370,33 @@
   .checklist-toggle-icon{ font-size:9px; }
   .checklist-body{ margin-top:6px; padding-top:6px; border-top:1px dashed var(--slate-soft); }
   .subtask-list{ margin-bottom:4px; }
-  .subtask-item{ display:flex; align-items:center; gap:8px; padding:3px 0; }
+  .subtask-item{ display:flex; align-items:flex-start; gap:8px; padding:4px 0; }
   .subtask-checkbox{
     width:15px; height:15px; border-radius:5px; border:2px solid var(--slate);
     cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; background:#fff;
-    transition: all 0.15s;
+    transition: all 0.15s; margin-top:2px;
   }
   .subtask-checkbox.checked{ background: var(--good); border-color: var(--good); }
   .subtask-checkbox svg{ width:8px; height:8px; opacity:0; transition:opacity 0.15s; }
   .subtask-checkbox.checked svg{ opacity:1; }
-  .subtask-text{ font-size:12px; font-weight:600; flex:1; word-break:break-word; }
+  .subtask-main{ flex:1; min-width:0; }
+  .subtask-text{ font-size:12px; font-weight:600; word-break:break-word; }
   .subtask-text.done{ text-decoration: line-through; color: var(--ink-soft); }
-  .subtask-del{ border:none; background:none; color:var(--ink-soft); opacity:0.35; font-size:11px; cursor:pointer; flex-shrink:0; }
-  .subtask-item:hover .subtask-del{ opacity:1; }
+  .subtask-desc{ font-size:10.5px; color: var(--ink-soft); font-weight:500; margin-top:1px; word-break:break-word; line-height:1.3; }
+  .subtask-actions{ display:flex; gap:2px; flex-shrink:0; opacity:0; transition:opacity 0.15s; }
+  .subtask-item:hover .subtask-actions{ opacity:1; }
+  .subtask-icon-btn{ border:none; background:none; color:var(--ink-soft); font-size:11px; cursor:pointer; padding:1px 4px; transition:color 0.15s; }
+  .subtask-icon-btn:hover{ color: var(--mirtilo); }
   .subtask-progress{ font-size:10px; font-weight:800; color: var(--ink-soft); margin: 4px 0 6px; text-transform:uppercase; letter-spacing:0.3px; }
   .subtask-add-row{ display:flex; gap:6px; margin-top:2px; }
   .subtask-add-row input{ flex:1; font-size:12px; padding:6px 10px; }
   .subtask-add-row .icon-btn{ width:24px; height:24px; font-size:13px; flex-shrink:0; }
+  .subtask-editing{
+    display:flex; flex-direction:column; gap:6px; padding:6px 0 8px;
+    border-bottom:1px dashed var(--slate-soft); margin-bottom:2px;
+  }
+  .subtask-editing input{ font-size:12px; padding:6px 9px; width:100%; }
+  .subtask-edit-actions{ display:flex; gap:6px; }
 
   /* ---------- TASK EDIT FORM ---------- */
   .task-edit-form{ display:block; background:#fff; border:2px solid var(--slate-soft); border-radius: var(--radius-sm); padding:12px; margin-bottom:9px; }
@@ -708,6 +718,7 @@
   let loaded = false;
   let editingNoteId = null;
   let editingTaskId = null;
+  let editingSubtask = null;
   let expandedChecklists = new Set();
   let expandedAgendaDetails = new Set();
   let agendaFilterDate = null;
@@ -789,6 +800,7 @@
           if(t.date === undefined) t.date = today;
           if(t.recurringId === undefined) t.recurringId = null;
           if(t.subtasks === undefined) t.subtasks = [];
+          t.subtasks.forEach(s => { if(s.description === undefined) s.description = ''; });
           if(t.time === undefined) t.time = null;
           if(t.status === undefined) t.status = t.done ? 'done' : 'pending';
           if(t.doneDate === undefined) t.doneDate = t.status === 'done' ? (t.created || Date.now()) : null;
@@ -982,7 +994,8 @@
     const t = state.tasks.find(x => x.id === taskId);
     if(!t) return;
     t.subtasks = t.subtasks || [];
-    t.subtasks.push({ id: uid(), text, done: false });
+    t.subtasks.push({ id: uid(), text, description: '', done: false });
+    input.value = '';
     saveData();
     renderKanban();
   }
@@ -996,6 +1009,32 @@
     const t = state.tasks.find(x => x.id === taskId);
     if(!t) return;
     t.subtasks = (t.subtasks || []).filter(x => x.id !== subId);
+    saveData();
+    renderKanban();
+  }
+  function editSubtask(taskId, subId){
+    editingSubtask = { taskId, subId };
+    renderKanban();
+    const el = $('subtaskEditText-' + taskId + '-' + subId);
+    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  }
+  function cancelEditSubtask(){
+    editingSubtask = null;
+    renderKanban();
+  }
+  function saveSubtaskEdit(taskId, subId){
+    const t = state.tasks.find(x => x.id === taskId);
+    if(!t) return;
+    const s = (t.subtasks || []).find(x => x.id === subId);
+    if(!s) return;
+    const textEl = $('subtaskEditText-' + taskId + '-' + subId);
+    const descEl = $('subtaskEditDesc-' + taskId + '-' + subId);
+    if(!textEl) return;
+    const val = textEl.value.trim();
+    if(!val) return;
+    s.text = val;
+    s.description = descEl ? descEl.value.trim() : '';
+    editingSubtask = null;
     saveData();
     renderKanban();
   }
@@ -1034,6 +1073,37 @@
   function kanbanCardHtml(t, status){
     return editingTaskId === t.id ? taskEditFormHtml(t) : kanbanCardViewHtml(t, status);
   }
+  function subtaskItemHtml(taskId, s){
+    const isEditing = editingSubtask && editingSubtask.taskId === taskId && editingSubtask.subId === s.id;
+    if(isEditing){
+      return `
+        <div class="subtask-editing">
+          <input type="text" id="subtaskEditText-${taskId}-${s.id}" value="${escapeHtml(s.text)}" maxlength="120" placeholder="Item da checklist">
+          <input type="text" id="subtaskEditDesc-${taskId}-${s.id}" value="${escapeHtml(s.description || '')}" maxlength="200" placeholder="Descrição (opcional)">
+          <div class="subtask-edit-actions">
+            <button class="mini-btn save" data-task-id="${taskId}" data-sub-id="${s.id}" data-action="save-subtask">Salvar</button>
+            <button class="mini-btn cancel" data-action="cancel-edit-subtask">Cancelar</button>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="subtask-item">
+        <div class="subtask-checkbox ${s.done ? 'checked' : ''}" data-action="toggle-subtask" data-task-id="${taskId}" data-sub-id="${s.id}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="subtask-main">
+          <div class="subtask-text ${s.done ? 'done' : ''}">${escapeHtml(s.text)}</div>
+          ${s.description ? `<div class="subtask-desc">${escapeHtml(s.description)}</div>` : ''}
+        </div>
+        <div class="subtask-actions">
+          <button class="subtask-icon-btn" data-action="edit-subtask" data-task-id="${taskId}" data-sub-id="${s.id}" title="Editar item">✎</button>
+          <button class="subtask-icon-btn" data-action="delete-subtask" data-task-id="${taskId}" data-sub-id="${s.id}" title="Excluir item">✕</button>
+        </div>
+      </div>
+    `;
+  }
+
   function kanbanCardViewHtml(t, status){
     const today = todayStr();
     const overdue = status !== 'done' && t.date < today;
@@ -1066,15 +1136,7 @@
           </button>
           <div class="checklist-body" style="display:${isOpen ? 'block' : 'none'};">
             ${subtasks.length > 0 ? `
-            <div class="subtask-list">${subtasks.map(s => `
-              <div class="subtask-item">
-                <div class="subtask-checkbox ${s.done ? 'checked' : ''}" data-action="toggle-subtask" data-task-id="${t.id}" data-sub-id="${s.id}">
-                  <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <div class="subtask-text ${s.done ? 'done' : ''}">${escapeHtml(s.text)}</div>
-                <button class="subtask-del" data-action="delete-subtask" data-task-id="${t.id}" data-sub-id="${s.id}" title="Excluir item">✕</button>
-              </div>
-            `).join('')}</div>
+            <div class="subtask-list">${subtasks.map(s => subtaskItemHtml(t.id, s)).join('')}</div>
             <div class="subtask-progress">${doneCount}/${subtasks.length} concluídos</div>` : ''}
             <div class="subtask-add-row">
               <input type="text" class="subtask-input" id="subtaskInput-${t.id}" placeholder="Adicionar item..." maxlength="120">
@@ -1888,6 +1950,9 @@
     if(action === 'toggle-subtask') toggleSubtask(taskId, subId);
     if(action === 'delete-subtask') deleteSubtask(taskId, subId);
     if(action === 'add-subtask') addSubtask(taskId);
+    if(action === 'edit-subtask') editSubtask(taskId, subId);
+    if(action === 'save-subtask') saveSubtaskEdit(taskId, subId);
+    if(action === 'cancel-edit-subtask') cancelEditSubtask();
     if(action === 'toggle-checklist') toggleChecklist(taskId);
     if(action === 'send-google') sendTaskToGoogleCalendar(id);
     if(action === 'create-task-from-agenda') createTaskFromAgenda(id);
