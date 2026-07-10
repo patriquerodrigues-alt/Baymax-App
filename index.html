@@ -669,7 +669,7 @@
         <button class="agenda-tool-btn" id="agendaHelpToggle" title="Como funciona?">ℹ️</button>
       </div>
       <div class="agenda-help-panel" id="agendaHelpPanel">
-        <strong>🔗 Conectar</strong> — autoriza o acesso ao seu Google Agenda. Depois de conectado, a agenda se atualiza sozinha a cada 1 hora, sem precisar fazer nada.<br>
+        <strong>🔗 Conectar</strong> — autoriza o acesso ao seu Google Agenda. Depois de conectado, a agenda se atualiza sozinha a cada 2 minutos, e também na hora sempre que você voltar pra essa aba.<br>
         <strong>🔄 Atualizar</strong> — força uma sincronização imediata: busca os últimos 7 dias + próximos 7 dias, adiciona o que for novo e corrige o que mudou (horário, participantes, links).<br>
         <strong>⬇ Exportar</strong> — baixa um arquivo .ics do dia selecionado, pra importar manualmente no Google Agenda (não precisa estar conectado).
       </div>
@@ -1481,7 +1481,8 @@
   let googleTokenClient = null;
   let googleAutoSyncTimer = null;
   let autoRefreshInProgress = false;
-  const GOOGLE_AUTO_SYNC_INTERVAL_MS = 60 * 60 * 1000; // 1 hora
+  let lastGoogleSyncAt = 0;
+  const GOOGLE_AUTO_SYNC_INTERVAL_MS = 2 * 60 * 1000; // 2 minutos — o mais próximo de "tempo real" possível sem servidor
 
   function isGoogleConfigured(){
     return GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('COLE_SEU_CLIENT_ID_AQUI');
@@ -1529,16 +1530,19 @@
   function startGoogleAutoSync(){
     if(googleAutoSyncTimer) clearInterval(googleAutoSyncTimer);
     googleAutoSyncTimer = setInterval(() => {
-      if(!googleTokenClient) return;
-      autoRefreshInProgress = true;
-      // prompt vazio = tenta renovar o token em segundo plano, sem abrir tela de login
-      googleTokenClient.requestAccessToken({ prompt: '' });
+      syncGoogleAgenda(true);
     }, GOOGLE_AUTO_SYNC_INTERVAL_MS);
+  }
+  function syncOnReturnToTab(){
+    if(!googleAccessToken) return;
+    // evita sincronizar de novo se já rodou há menos de 30s (ex: alt-tab rápido)
+    if(Date.now() - lastGoogleSyncAt < 30000) return;
+    syncGoogleAgenda(true);
   }
   function updateGoogleButton(){
     const btn = $('googleConnectBtn');
     if(!btn) return;
-    if(googleAccessToken){ btn.classList.add('on'); btn.title = 'Google Agenda conectado — atualiza sozinho a cada 1h'; }
+    if(googleAccessToken){ btn.classList.add('on'); btn.title = 'Google Agenda conectado — sincroniza a cada 2 min'; }
     else { btn.classList.remove('on'); btn.title = 'Conectar ao Google Agenda'; }
   }
   async function syncGoogleAgenda(silent){
@@ -1546,6 +1550,7 @@
       if(!silent) connectGoogleCalendar();
       return;
     }
+    lastGoogleSyncAt = Date.now();
     const refreshBtn = $('googleRefreshBtn');
     if(refreshBtn) refreshBtn.classList.add('spinning');
     const now = new Date();
@@ -1614,7 +1619,11 @@
       }
     }catch(e){
       console.error(e);
-      if(silent){
+      if(String(e.message).includes('HTTP 401') && googleTokenClient){
+        // token expirou: tenta renovar em segundo plano; a sincronização se repete sozinha no callback
+        autoRefreshInProgress = true;
+        googleTokenClient.requestAccessToken({ prompt: '' });
+      } else if(silent){
         showToast({ text: '⚠️ A sincronização automática falhou. Toque em 🔄 para tentar de novo.' });
       } else {
         alert('Erro ao atualizar a agenda: ' + e.message + '\n\nVerifique se a Calendar API está ativada no seu projeto do Google Cloud e se você está entre os "Test users" configurados.');
@@ -2117,6 +2126,10 @@
     });
   }
   window.addEventListener('load', () => { setTimeout(initGoogleAuth, 500); });
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible') syncOnReturnToTab();
+  });
+  window.addEventListener('focus', syncOnReturnToTab);
 
   loadData();
 })();
