@@ -418,6 +418,21 @@
   .agenda-add{ display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
   .agenda-add input[type="time"]{ width: 92px; flex-shrink:0; }
   .agenda-add input[type="text"]{ flex:1; min-width: 100px; }
+  .agenda-filter-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .agenda-nav-btn{
+    border:none; background: var(--slate-soft); color: var(--ink-soft); width:32px; height:32px;
+    border-radius:50%; font-size:14px; font-weight:800; cursor:pointer; flex-shrink:0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .agenda-nav-btn:hover{ background: var(--curacau); color:#fff; }
+  .agenda-today-btn{
+    border:none; background: var(--slate-soft); color: var(--ink-soft); font-size:12px; font-weight:800;
+    padding:7px 14px; border-radius:100px; cursor:pointer; flex-shrink:0;
+    transition: background 0.15s, color 0.15s; font-family:'Nunito', sans-serif;
+  }
+  .agenda-today-btn.active{ background: var(--curacau); color:#fff; }
+  .agenda-filter-row input[type="date"]{ flex:1; min-width:110px; }
+  .agenda-filter-label{ font-size:12.5px; font-weight:800; color: var(--mirtilo-deep); margin: 0 0 12px; }
   .agenda-item{ display:flex; gap: 12px; align-items:flex-start; padding: 9px 4px; border-bottom: 1px solid var(--slate-soft); }
   .agenda-item:last-child{ border-bottom:none; }
   .agenda-item.next{ background: linear-gradient(90deg, rgba(28,169,201,0.08), transparent); border-radius: var(--radius-sm); }
@@ -622,7 +637,14 @@
         <svg class="card-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#1CA9C9" stroke-width="2.2"/><path d="M12 7v5l3 3" stroke="#1CA9C9" stroke-width="2.2" stroke-linecap="round"/></svg>
         Agenda
       </h2>
-      <p class="card-sub">Compromissos e horários de hoje</p>
+      <p class="card-sub">Organize seus compromissos navegando por dia</p>
+      <div class="agenda-filter-row">
+        <button class="agenda-nav-btn" id="agendaPrevBtn" title="Dia anterior">◀</button>
+        <button class="agenda-today-btn" id="agendaTodayBtn">Hoje</button>
+        <button class="agenda-nav-btn" id="agendaNextBtn" title="Próximo dia">▶</button>
+        <input type="date" id="agendaDateFilter" title="Ir para uma data específica">
+      </div>
+      <p class="agenda-filter-label" id="agendaFilterLabel"></p>
       <div class="agenda-add">
         <input type="time" id="agendaTime">
         <input type="text" id="agendaInput" placeholder="Compromisso...">
@@ -630,7 +652,7 @@
       </div>
       <button class="google-btn" id="googleConnectBtn">🔗 Conectar Google Agenda</button>
       <button class="google-btn secondary" id="googleImportBtn">📥 Importar agenda de hoje</button>
-      <button class="ics-btn" id="exportIcsBtn">⬇ Exportar compromissos de hoje (.ics)</button>
+      <button class="ics-btn" id="exportIcsBtn">⬇ Exportar compromissos do dia selecionado (.ics)</button>
       <p class="ics-note">Conectando ao Google, os compromissos de hoje entram automaticamente. Sem conectar, use a exportação .ics para importar manualmente no Google Agenda.</p>
       <ul class="list" id="agendaList"></ul>
     </section>
@@ -673,6 +695,7 @@
   let editingTaskId = null;
   let expandedChecklists = new Set();
   let expandedAgendaDetails = new Set();
+  let agendaFilterDate = null;
   let lastKnownDate = null;
   let taskSortMode = 'complexity';
   let notificationsEnabled = false;
@@ -769,6 +792,7 @@
           if(a.links === undefined) a.links = [];
           if(a.location === undefined) a.location = '';
           if(a.linkedTaskId === undefined) a.linkedTaskId = null;
+          if(a.date === undefined) a.date = today;
         });
       }
     }catch(e){
@@ -1248,13 +1272,31 @@
   }
 
   // ---------- AGENDA ----------
+  function addDaysToDateStr(dateStr, days){
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function formatAgendaDayLabel(dateStr){
+    const today = todayStr();
+    if(dateStr === today) return 'Hoje';
+    if(dateStr === addDaysToDateStr(today, 1)) return 'Amanhã';
+    if(dateStr === addDaysToDateStr(today, -1)) return 'Ontem';
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  }
+  function setAgendaFilterDate(dateStr){
+    agendaFilterDate = dateStr;
+    $('agendaDateFilter').value = dateStr;
+    renderAgenda();
+  }
   function addAgenda(){
     const timeInput = $('agendaTime');
     const textInput = $('agendaInput');
     const text = textInput.value.trim();
     const time = timeInput.value || '00:00';
     if(!text) return;
-    state.agenda.push({ id: uid(), text, time });
+    state.agenda.push({ id: uid(), text, time, date: agendaFilterDate, fromGoogle: false, linkedTaskId: null, emails: [], links: [] });
     textInput.value = '';
     saveData();
     renderAll();
@@ -1265,9 +1307,11 @@
     renderAll();
   }
   function getNextAgendaItem(){
+    const today = todayStr();
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const sorted = [...state.agenda].sort((a,b) => a.time.localeCompare(b.time));
+    const todays = state.agenda.filter(a => (a.date || today) === today);
+    const sorted = [...todays].sort((a,b) => a.time.localeCompare(b.time));
     return sorted.find(a => {
       const [h,m] = a.time.split(':').map(Number);
       return (h*60+m) >= nowMinutes;
@@ -1275,22 +1319,31 @@
   }
   function renderAgenda(){
     const list = $('agendaList');
-    if(state.agenda.length === 0){
-      list.innerHTML = '<div class="empty-state">Nenhum compromisso hoje.<br>Adicione um horário acima.</div>';
+    const today = todayStr();
+    const isToday = agendaFilterDate === today;
+    $('agendaFilterLabel').textContent = 'Compromissos de ' + formatAgendaDayLabel(agendaFilterDate) +
+      (isToday ? '' : ` (${new Date(agendaFilterDate + 'T00:00:00').toLocaleDateString('pt-BR')})`);
+    $('agendaTodayBtn').classList.toggle('active', isToday);
+
+    const dayItems = state.agenda.filter(a => (a.date || today) === agendaFilterDate);
+    if(dayItems.length === 0){
+      const emptyMsg = agendaFilterDate < today ? 'Nenhum compromisso registrado nesse dia.' : 'Nenhum compromisso agendado.<br>Adicione um horário acima.';
+      list.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
       return;
     }
     const next = getNextAgendaItem();
-    const sorted = [...state.agenda].sort((a,b) => a.time.localeCompare(b.time));
+    const sorted = [...dayItems].sort((a,b) => a.time.localeCompare(b.time));
     list.innerHTML = sorted.map(a => {
       const emails = a.emails || [];
       const links = a.links || [];
       const hasDetails = emails.length > 0 || links.length > 0;
       const isOpen = expandedAgendaDetails.has(a.id);
+      const isNext = isToday && next && a.id === next.id;
       return `
-      <li class="agenda-item ${next && a.id === next.id ? 'next' : ''}">
+      <li class="agenda-item ${isNext ? 'next' : ''}">
         <div class="agenda-time">${a.time}</div>
         <div class="agenda-main">
-          <div class="agenda-text">${escapeHtml(a.text)}${a.fromGoogle ? '<span class="google-tag" title="Importado do Google Agenda">G</span>' : ''}${a.linkedTaskId ? '<span class="task-link-tag" title="Horário bloqueado por uma tarefa">🔗</span>' : ''}${next && a.id === next.id ? '<span class="next-tag">Próximo</span>' : ''}</div>
+          <div class="agenda-text">${escapeHtml(a.text)}${a.fromGoogle ? '<span class="google-tag" title="Importado do Google Agenda">G</span>' : ''}${a.linkedTaskId ? '<span class="task-link-tag" title="Horário bloqueado por uma tarefa">🔗</span>' : ''}${isNext ? '<span class="next-tag">Próximo</span>' : ''}</div>
           ${hasDetails ? `<button class="agenda-details-toggle" data-action="toggle-agenda-details" data-id="${a.id}">${isOpen ? '▾' : '▸'} Detalhes (${emails.length ? emails.length + ' e-mail' + (emails.length>1?'s':'') : ''}${emails.length && links.length ? ', ' : ''}${links.length ? links.length + ' link' + (links.length>1?'s':'') : ''})</button>` : ''}
           ${isOpen ? `<div class="agenda-details-body">
             ${emails.length ? `<div class="agenda-detail-row">✉️ ${emails.map(e => escapeHtml(e)).join(', ')}</div>` : ''}
@@ -1317,10 +1370,12 @@
     URL.revokeObjectURL(url);
   }
   function exportICS(){
-    if(state.agenda.length === 0){ alert('Nenhum compromisso para exportar hoje.'); return; }
-    const dateStr = todayStr().replace(/-/g, '');
+    const today = todayStr();
+    const dayItems = state.agenda.filter(a => (a.date || today) === agendaFilterDate);
+    if(dayItems.length === 0){ alert('Nenhum compromisso para exportar nesse dia.'); return; }
+    const dateStr = agendaFilterDate.replace(/-/g, '');
     let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Baymax//Agenda//PT-BR\r\nCALSCALE:GREGORIAN\r\n';
-    state.agenda.forEach(a => {
+    dayItems.forEach(a => {
       const [h, m] = a.time.split(':').map(Number);
       const startMinutes = h * 60 + m;
       const endMinutes = startMinutes + 30;
@@ -1336,7 +1391,7 @@
       ics += 'END:VEVENT\r\n';
     });
     ics += 'END:VCALENDAR\r\n';
-    downloadFile('baymax-agenda.ics', ics, 'text/calendar');
+    downloadFile(`baymax-agenda-${agendaFilterDate}.ics`, ics, 'text/calendar');
   }
 
   // ---------- GOOGLE CALENDAR ----------
@@ -1427,8 +1482,8 @@
         });
 
         state.agenda.push({
-          id: uid(), text: ev.summary || '(sem título)', time, fromGoogle: true, googleEventId: ev.id,
-          emails, links: Array.from(linkSet), location: ev.location || ''
+          id: uid(), text: ev.summary || '(sem título)', time, date: today, fromGoogle: true, googleEventId: ev.id,
+          linkedTaskId: null, emails, links: Array.from(linkSet), location: ev.location || ''
         });
         imported++;
       });
@@ -1471,8 +1526,8 @@
       const data = await res.json();
       t.googleEventId = data.id;
       const alreadyLinked = state.agenda.some(a => a.linkedTaskId === t.id);
-      if(!alreadyLinked && date === todayStr()){
-        state.agenda.push({ id: uid(), text: t.text, time, fromGoogle: false, linkedTaskId: t.id, emails: [], links: [] });
+      if(!alreadyLinked){
+        state.agenda.push({ id: uid(), text: t.text, time, date, fromGoogle: false, linkedTaskId: t.id, emails: [], links: [] });
       }
       saveData();
       renderAgenda();
@@ -1491,7 +1546,7 @@
     if(a.links && a.links.length) desc += (desc ? '\n' : '') + 'Links: ' + a.links.join(', ');
     state.tasks.unshift({
       id: uid(), text: a.text, description: desc, complexity: 'moderada',
-      maxTime: null, time: a.time, status: 'pending', doneDate: null, date: todayStr(),
+      maxTime: null, time: a.time, status: 'pending', doneDate: null, date: a.date || todayStr(),
       recurringId: null, created: Date.now(), subtasks: []
     });
     saveData();
@@ -1735,6 +1790,10 @@
   $('addAgendaBtn').addEventListener('click', addAgenda);
   $('agendaInput').addEventListener('keydown', e => { if(e.key === 'Enter') addAgenda(); });
   $('exportIcsBtn').addEventListener('click', exportICS);
+  $('agendaPrevBtn').addEventListener('click', () => setAgendaFilterDate(addDaysToDateStr(agendaFilterDate, -1)));
+  $('agendaNextBtn').addEventListener('click', () => setAgendaFilterDate(addDaysToDateStr(agendaFilterDate, 1)));
+  $('agendaTodayBtn').addEventListener('click', () => setAgendaFilterDate(todayStr()));
+  $('agendaDateFilter').addEventListener('change', () => setAgendaFilterDate($('agendaDateFilter').value || todayStr()));
   $('googleConnectBtn').addEventListener('click', connectGoogleCalendar);
   $('googleImportBtn').addEventListener('click', importGoogleAgendaToday);
   $('addColumnToggleBtn').addEventListener('click', () => {
@@ -1853,6 +1912,7 @@
   setInterval(() => {
     const nowDate = todayStr();
     if(nowDate !== lastKnownDate){
+      if(agendaFilterDate === lastKnownDate) setAgendaFilterDate(nowDate);
       lastKnownDate = nowDate;
       notifiedTasks.clear();
       ensureTodayRecurringInstances();
@@ -1868,6 +1928,8 @@
 
   // init date field default
   $('taskDate').value = todayStr();
+  agendaFilterDate = todayStr();
+  $('agendaDateFilter').value = agendaFilterDate;
 
   // sync notification button with existing browser permission
   if('Notification' in window && Notification.permission === 'granted'){
