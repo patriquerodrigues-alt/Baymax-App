@@ -315,8 +315,12 @@
   /* ---------- KANBAN ---------- */
   .kanban-board{ display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-top: 4px; }
   @media (max-width: 980px){ .kanban-board{ grid-template-columns: 1fr; } }
-  .kanban-col{ background: var(--bg); border-radius: var(--radius-md); padding:14px; display:flex; flex-direction:column; min-height: 460px; }
-  .kanban-col-header{ display:flex; align-items:center; gap:8px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14.5px; margin-bottom:12px; padding:0 2px; }
+  .kanban-col{ background: var(--bg); border-radius: var(--radius-md); padding:14px; display:flex; flex-direction:column; min-height: 460px; transition: opacity 0.15s, transform 0.15s; }
+  .kanban-col.col-dragging{ opacity:0.4; }
+  .kanban-col.col-drag-over{ outline: 2px dashed var(--mirtilo); outline-offset: -4px; background: rgba(76,63,122,0.06); }
+  .kanban-col-header{ display:flex; align-items:center; gap:8px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14.5px; margin-bottom:12px; padding:0 2px; cursor:grab; }
+  .kanban-col-header:active{ cursor:grabbing; }
+  .kanban-drag-handle{ color: var(--slate); font-size:14px; flex-shrink:0; }
   .kanban-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
   .kanban-dot.red{ background: var(--crit-red); }
   .kanban-dot.yellow{ background: var(--warn); }
@@ -1108,8 +1112,9 @@
   function renderKanbanSkeleton(){
     const board = $('kanbanBoard');
     board.innerHTML = state.kanbanColumns.map(c => `
-      <div class="kanban-col">
-        <div class="kanban-col-header">
+      <div class="kanban-col" data-col-id="${c.id}">
+        <div class="kanban-col-header" draggable="true" title="Arraste para reordenar as etapas">
+          <span class="kanban-drag-handle">⠿</span>
           <span class="kanban-dot ${c.dot}"></span>${escapeHtml(c.label)}
           <span class="kanban-count" id="count-${c.id}">0</span>
           ${(c.id !== 'pending' && c.id !== 'inprogress' && c.id !== 'done') ? `<button class="kanban-col-del" data-col-id="${c.id}" data-action="delete-column" title="Remover etapa">✕</button>` : ''}
@@ -1902,8 +1907,28 @@
     }
   });
 
-  // drag & drop between kanban columns
+  // drag & drop: cards between columns, and columns to reorder
+  function reorderColumn(draggedColId, targetColId){
+    if(draggedColId === targetColId) return;
+    const fromIndex = state.kanbanColumns.findIndex(c => c.id === draggedColId);
+    const toIndex = state.kanbanColumns.findIndex(c => c.id === targetColId);
+    if(fromIndex === -1 || toIndex === -1) return;
+    const [moved] = state.kanbanColumns.splice(fromIndex, 1);
+    state.kanbanColumns.splice(toIndex, 0, moved);
+    saveData();
+    renderKanbanSkeleton();
+    renderKanban();
+  }
+
   document.addEventListener('dragstart', e => {
+    const header = e.target.closest('.kanban-col-header');
+    if(header){
+      const col = header.closest('.kanban-col');
+      e.dataTransfer.setData('application/x-kanban-column', col.getAttribute('data-col-id'));
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => col.classList.add('col-dragging'), 0);
+      return;
+    }
     const card = e.target.closest('.kanban-card');
     if(!card) return;
     e.dataTransfer.setData('text/plain', card.dataset.id);
@@ -1913,22 +1938,43 @@
   document.addEventListener('dragend', e => {
     const card = e.target.closest('.kanban-card');
     if(card) card.classList.remove('dragging');
+    document.querySelectorAll('.kanban-col.col-dragging').forEach(c => c.classList.remove('col-dragging'));
+    document.querySelectorAll('.kanban-col.col-drag-over').forEach(c => c.classList.remove('col-drag-over'));
   });
   document.addEventListener('dragover', e => {
-    const col = e.target.closest('.kanban-col-body');
-    if(col){ e.preventDefault(); col.classList.add('drag-over'); }
+    const isColumnDrag = e.dataTransfer.types.includes('application/x-kanban-column');
+    if(isColumnDrag){
+      const col = e.target.closest('.kanban-col');
+      if(col){ e.preventDefault(); col.classList.add('col-drag-over'); }
+      return;
+    }
+    const colBody = e.target.closest('.kanban-col-body');
+    if(colBody){ e.preventDefault(); colBody.classList.add('drag-over'); }
   });
   document.addEventListener('dragleave', e => {
-    const col = e.target.closest('.kanban-col-body');
-    if(col) col.classList.remove('drag-over');
+    const col = e.target.closest('.kanban-col');
+    if(col) col.classList.remove('col-drag-over');
+    const colBody = e.target.closest('.kanban-col-body');
+    if(colBody) colBody.classList.remove('drag-over');
   });
   document.addEventListener('drop', e => {
-    const col = e.target.closest('.kanban-col-body');
-    if(!col) return;
+    const isColumnDrag = e.dataTransfer.types.includes('application/x-kanban-column');
+    if(isColumnDrag){
+      const col = e.target.closest('.kanban-col');
+      if(!col) return;
+      e.preventDefault();
+      col.classList.remove('col-drag-over');
+      const draggedColId = e.dataTransfer.getData('application/x-kanban-column');
+      const targetColId = col.getAttribute('data-col-id');
+      reorderColumn(draggedColId, targetColId);
+      return;
+    }
+    const colBody = e.target.closest('.kanban-col-body');
+    if(!colBody) return;
     e.preventDefault();
-    col.classList.remove('drag-over');
+    colBody.classList.remove('drag-over');
     const taskId = e.dataTransfer.getData('text/plain');
-    const status = col.getAttribute('data-status');
+    const status = colBody.getAttribute('data-status');
     if(taskId && status) setTaskStatus(taskId, status);
   });
 
