@@ -450,22 +450,26 @@
   .del-btn{ border:none; background:none; color: var(--ink-soft); font-size: 16px; cursor:pointer; flex-shrink:0; opacity:0.5; transition: opacity 0.15s, color 0.15s; padding: 2px 4px; }
   .agenda-item:hover .del-btn{ opacity:1; }
   .del-btn:hover{ color: var(--mirtilo); }
-  .ics-btn{
-    border:none; background: var(--slate-soft); color: var(--ink); font-size:12px; font-weight:800;
-    padding:9px 12px; border-radius: var(--radius-sm); cursor:pointer; width:100%; margin-bottom:6px;
-    transition: background 0.2s; font-family:'Nunito', sans-serif;
+  .agenda-toolbar{ display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+  .agenda-tool-btn{
+    border:none; background: var(--slate-soft); color: var(--ink-soft); width:34px; height:34px;
+    border-radius:50%; font-size:15px; cursor:pointer; flex-shrink:0; position:relative;
+    transition: background 0.2s, color 0.2s; display:flex; align-items:center; justify-content:center;
   }
-  .ics-btn:hover{ background: var(--slate); color:#fff; }
-  .ics-note{ font-size:10.5px; color: var(--ink-soft); font-weight:600; margin: 0 0 14px; line-height:1.4; }
-  .google-btn{
-    border:none; background: var(--curacau); color:#fff; font-size:12px; font-weight:800;
-    padding:9px 12px; border-radius: var(--radius-sm); cursor:pointer; width:100%; margin-bottom:6px;
-    transition: background 0.2s; font-family:'Nunito', sans-serif;
+  .agenda-tool-btn:hover{ background: var(--slate); color:#fff; }
+  .agenda-tool-btn.on{ background: var(--curacau); color:#fff; }
+  .agenda-tool-btn.on::after{
+    content:""; position:absolute; top:-1px; right:-1px; width:9px; height:9px; border-radius:50%;
+    background: var(--good); border:2px solid var(--paper);
   }
-  .google-btn:hover{ background: var(--curacau-deep); }
-  .google-btn.secondary{ background: var(--slate-soft); color: var(--ink-soft); }
-  .google-btn.secondary:hover{ background: var(--slate); color:#fff; }
-  .google-btn.on{ background: var(--good); }
+  .agenda-tool-btn.spinning{ animation: spin 0.8s linear infinite; }
+  @keyframes spin{ from{ transform: rotate(0deg); } to{ transform: rotate(360deg); } }
+  .agenda-help-panel{
+    display:none; font-size:11px; color: var(--ink-soft); font-weight:600; line-height:1.5;
+    margin-bottom:12px; padding:10px 12px; background: var(--bg); border-radius: var(--radius-sm);
+  }
+  .agenda-help-panel.open{ display:block; }
+  .agenda-help-panel strong{ color: var(--ink); }
   .google-tag{
     display:inline-block; background:var(--curacau); color:#fff; font-size:9px; font-weight:800;
     width:14px; height:14px; line-height:14px; text-align:center; border-radius:50%; vertical-align:middle; margin-left:4px;
@@ -644,16 +648,23 @@
         <button class="agenda-nav-btn" id="agendaNextBtn" title="Próximo dia">▶</button>
         <input type="date" id="agendaDateFilter" title="Ir para uma data específica">
       </div>
+      <div class="agenda-toolbar">
+        <button class="agenda-tool-btn" id="googleConnectBtn" title="Conectar ao Google Agenda">🔗</button>
+        <button class="agenda-tool-btn" id="googleRefreshBtn" title="Atualizar agenda com o Google">🔄</button>
+        <button class="agenda-tool-btn" id="exportIcsBtn" title="Exportar dia selecionado (.ics)">⬇</button>
+        <button class="agenda-tool-btn" id="agendaHelpToggle" title="Como funciona?">ℹ️</button>
+      </div>
+      <div class="agenda-help-panel" id="agendaHelpPanel">
+        <strong>🔗 Conectar</strong> — autoriza o acesso ao seu Google Agenda.<br>
+        <strong>🔄 Atualizar</strong> — busca os últimos 7 dias + próximos 7 dias, adiciona o que for novo e corrige o que mudou (horário, participantes, links). Não funciona sem conectar antes.<br>
+        <strong>⬇ Exportar</strong> — baixa um arquivo .ics do dia selecionado, pra importar manualmente no Google Agenda (não precisa estar conectado).
+      </div>
       <p class="agenda-filter-label" id="agendaFilterLabel"></p>
       <div class="agenda-add">
         <input type="time" id="agendaTime">
         <input type="text" id="agendaInput" placeholder="Compromisso...">
         <button class="icon-btn" id="addAgendaBtn" title="Adicionar compromisso">+</button>
       </div>
-      <button class="google-btn" id="googleConnectBtn">🔗 Conectar Google Agenda</button>
-      <button class="google-btn secondary" id="googleImportBtn">📥 Importar agenda de hoje</button>
-      <button class="ics-btn" id="exportIcsBtn">⬇ Exportar compromissos do dia selecionado (.ics)</button>
-      <p class="ics-note">Conectando ao Google, os compromissos de hoje entram automaticamente. Sem conectar, use a exportação .ics para importar manualmente no Google Agenda.</p>
       <ul class="list" id="agendaList"></ul>
     </section>
   </div>
@@ -1418,8 +1429,8 @@
         }
         googleAccessToken = resp.access_token;
         updateGoogleButton();
-        showToast({ text: 'Conectado ao Google Agenda! Importando os compromissos de hoje...' });
-        importGoogleAgendaToday();
+        showToast({ text: 'Conectado ao Google Agenda! Sincronizando os últimos 7 dias e próximos 7 dias...' });
+        syncGoogleAgenda();
       }
     });
     return true;
@@ -1439,20 +1450,21 @@
   function updateGoogleButton(){
     const btn = $('googleConnectBtn');
     if(!btn) return;
-    if(googleAccessToken){ btn.textContent = '🔗 Google Agenda conectado'; btn.classList.add('on'); }
-    else { btn.textContent = '🔗 Conectar Google Agenda'; btn.classList.remove('on'); }
+    if(googleAccessToken){ btn.classList.add('on'); btn.title = 'Google Agenda conectado'; }
+    else { btn.classList.remove('on'); btn.title = 'Conectar ao Google Agenda'; }
   }
-  async function importGoogleAgendaToday(){
+  async function syncGoogleAgenda(){
     if(!googleAccessToken){
       connectGoogleCalendar();
       return;
     }
-    const today = todayStr();
+    const refreshBtn = $('googleRefreshBtn');
+    refreshBtn.classList.add('spinning');
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const startOfWindow = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0);
+    const endOfWindow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59);
     try{
-      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(startOfDay.toISOString())}&timeMax=${encodeURIComponent(endOfDay.toISOString())}&singleEvents=true&orderBy=startTime`, {
+      const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(startOfWindow.toISOString())}&timeMax=${encodeURIComponent(endOfWindow.toISOString())}&singleEvents=true&orderBy=startTime&maxResults=250`, {
         headers: { Authorization: `Bearer ${googleAccessToken}` }
       });
       if(!res.ok){
@@ -1460,17 +1472,21 @@
         throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200));
       }
       const data = await res.json();
-      let imported = 0;
+      let added = 0;
+      let updated = 0;
       const urlRegex = /(https?:\/\/[^\s<>")]+)/g;
       (data.items || []).forEach(ev => {
         if(!ev.start) return;
         let time = '00:00';
+        let eventDate = todayStr();
         if(ev.start.dateTime){
           const d = new Date(ev.start.dateTime);
           time = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+          eventDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        } else if(ev.start.date){
+          eventDate = ev.start.date;
+          time = '00:00';
         }
-        const already = state.agenda.some(a => a.googleEventId === ev.id);
-        if(already) return;
 
         const emails = (ev.attendees || []).map(p => p.email).filter(Boolean);
         const linkSet = new Set();
@@ -1481,18 +1497,34 @@
           if(matches) matches.forEach(u => linkSet.add(u.replace(/[.,;]+$/, '')));
         });
 
-        state.agenda.push({
-          id: uid(), text: ev.summary || '(sem título)', time, date: today, fromGoogle: true, googleEventId: ev.id,
-          linkedTaskId: null, emails, links: Array.from(linkSet), location: ev.location || ''
-        });
-        imported++;
+        const existing = state.agenda.find(a => a.googleEventId === ev.id);
+        if(existing){
+          existing.text = ev.summary || '(sem título)';
+          existing.time = time;
+          existing.date = eventDate;
+          existing.emails = emails;
+          existing.links = Array.from(linkSet);
+          existing.location = ev.location || '';
+          updated++;
+        } else {
+          state.agenda.push({
+            id: uid(), text: ev.summary || '(sem título)', time, date: eventDate, fromGoogle: true, googleEventId: ev.id,
+            linkedTaskId: null, emails, links: Array.from(linkSet), location: ev.location || ''
+          });
+          added++;
+        }
       });
       saveData();
       renderAgenda();
-      showToast({ text: imported > 0 ? `${imported} evento(s) importado(s) do Google Agenda, com e-mails e links inclusos!` : 'Nenhum evento novo encontrado para hoje.' });
+      const parts = [];
+      if(added > 0) parts.push(`${added} novo(s)`);
+      if(updated > 0) parts.push(`${updated} atualizado(s)`);
+      showToast({ text: parts.length > 0 ? `Agenda sincronizada: ${parts.join(', ')}!` : 'Agenda já estava em dia — nada novo para sincronizar.' });
     }catch(e){
       console.error(e);
-      alert('Erro ao importar do Google Agenda: ' + e.message + '\n\nVerifique se a Calendar API está ativada no seu projeto do Google Cloud e se você está entre os "Test users" configurados.');
+      alert('Erro ao atualizar a agenda: ' + e.message + '\n\nVerifique se a Calendar API está ativada no seu projeto do Google Cloud e se você está entre os "Test users" configurados.');
+    }finally{
+      refreshBtn.classList.remove('spinning');
     }
   }
   async function sendTaskToGoogleCalendar(taskId){
@@ -1795,7 +1827,8 @@
   $('agendaTodayBtn').addEventListener('click', () => setAgendaFilterDate(todayStr()));
   $('agendaDateFilter').addEventListener('change', () => setAgendaFilterDate($('agendaDateFilter').value || todayStr()));
   $('googleConnectBtn').addEventListener('click', connectGoogleCalendar);
-  $('googleImportBtn').addEventListener('click', importGoogleAgendaToday);
+  $('googleRefreshBtn').addEventListener('click', syncGoogleAgenda);
+  $('agendaHelpToggle').addEventListener('click', () => { $('agendaHelpPanel').classList.toggle('open'); });
   $('addColumnToggleBtn').addEventListener('click', () => {
     const form = $('addColumnForm');
     const isHidden = form.style.display === 'none' || form.style.display === '';
