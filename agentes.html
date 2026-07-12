@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Agentes — Toqan</title>
+<meta name="theme-color" content="#4C3F7A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #FAF6EF;
+    --paper: #FFFFFF;
+    --ink: #2C2A28;
+    --ink-soft: #7A756D;
+    --mirtilo: #4C3F7A;
+    --mirtilo-deep: #362C5C;
+    --curacau: #1CA9C9;
+    --curacau-deep: #12839F;
+    --avela: #A6764F;
+    --avela-deep: #8B5E3C;
+    --avela-light: #F5E9DC;
+    --slate: #9FB2BE;
+    --slate-soft: #E7EEF1;
+    --good: #4C9F63;
+    --warn: #E8B330;
+    --crit-red: #E14B4B;
+    --ring: rgba(76,63,122,0.22);
+    --radius-lg: 28px;
+    --radius-md: 18px;
+    --radius-sm: 12px;
+    --shadow: 0 10px 30px rgba(44,42,40,0.06), 0 2px 8px rgba(44,42,40,0.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 8% 12%, rgba(28,169,201,0.08) 0, transparent 40%),
+      radial-gradient(circle at 92% 85%, rgba(166,118,79,0.07) 0, transparent 45%);
+    color: var(--ink);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 60px;
+  }
+  .app{ max-width: 1180px; margin: 0 auto; }
+
+  .hero{
+    display:flex; align-items:center; gap:22px; background: var(--paper); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow); padding: 26px 32px; margin-bottom: 20px; position:relative; overflow:hidden; flex-wrap:wrap;
+  }
+  .hero::after{
+    content:""; position:absolute; right:-60px; top:-60px; width:200px; height:200px; border-radius:50%;
+    background: radial-gradient(circle, rgba(76,63,122,0.10), transparent 70%);
+  }
+  .hero-icon{
+    width:64px; height:64px; border-radius:50%; background: var(--mirtilo); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:30px; flex-shrink:0;
+  }
+  .hero-text{ flex:1; min-width:220px; }
+  .hero-text h1{ font-family:'Baloo 2', sans-serif; font-weight:800; font-size: clamp(24px, 3.4vw, 32px); margin:0 0 4px; color: var(--mirtilo-deep); }
+  .hero-text p{ margin:0; font-size:14px; color: var(--ink-soft); font-weight:600; }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none; color: var(--curacau-deep);
+    font-weight:800; font-size:13px; background: var(--slate-soft); padding:9px 16px; border-radius:100px;
+    transition: background 0.2s, color 0.2s; flex-shrink:0;
+  }
+  .back-link:hover{ background: var(--curacau); color:#fff; }
+
+  .toolbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px;
+  }
+  .search-input{
+    flex:1; min-width:200px; font-family:'Nunito', sans-serif; border:2px solid var(--slate-soft); border-radius: var(--radius-sm);
+    padding:11px 16px; font-size:14px; font-weight:600; color: var(--ink); outline:none; background:#fff; transition:border-color 0.2s;
+  }
+  .search-input:focus{ border-color: var(--mirtilo); box-shadow: 0 0 0 4px var(--ring); }
+  .tool-btn{
+    border:none; background: var(--slate-soft); color: var(--ink-soft); width:42px; height:42px; border-radius:50%;
+    font-size:16px; cursor:pointer; flex-shrink:0; transition: background 0.2s, color 0.2s; position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tool-btn:hover{ background: var(--slate); color:#fff; }
+  .tool-btn.spinning{ animation: spin 0.8s linear infinite; }
+  @keyframes spin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+  .add-btn{
+    border:none; background: var(--mirtilo); color:#fff; font-weight:800; font-size:13px;
+    padding:11px 20px; border-radius:100px; cursor:pointer; flex-shrink:0; transition: background 0.2s;
+    font-family:'Nunito', sans-serif; white-space:nowrap;
+  }
+  .add-btn:hover{ background: var(--mirtilo-deep); }
+
+  .sync-note{
+    font-size:11.5px; color: var(--ink-soft); font-weight:600; line-height:1.5; margin: -8px 0 20px;
+    padding:10px 14px; background: var(--paper); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+  }
+  .sync-note strong{ color: var(--ink); }
+
+  .agent-form{
+    background: var(--paper); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding:22px;
+    margin-bottom:20px; display:none;
+  }
+  .agent-form.open{ display:block; }
+  .agent-form h3{ font-family:'Baloo 2', sans-serif; font-size:17px; margin:0 0 14px; color: var(--mirtilo-deep); }
+  .form-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .form-row > *{ flex:1; min-width:140px; }
+  .form-row.icon-row > *{ flex: 0 0 auto; }
+  input[type="text"], input[type="url"], textarea{
+    font-family:'Nunito', sans-serif; border:2px solid var(--slate-soft); border-radius: var(--radius-sm);
+    padding:10px 14px; font-size:14px; font-weight:600; color: var(--ink); outline:none; background:#fff;
+    transition:border-color 0.2s; width:100%;
+  }
+  input:focus, textarea:focus{ border-color: var(--mirtilo); box-shadow: 0 0 0 4px var(--ring); }
+  textarea{ resize:vertical; min-height:60px; font-weight:500; }
+  .icon-input{ width:64px !important; text-align:center; font-size:20px; flex:0 0 64px !important; }
+  .form-actions{ display:flex; gap:10px; margin-top:6px; }
+  .mini-btn{ border:none; border-radius:100px; padding:9px 20px; font-size:13px; font-weight:800; cursor:pointer; font-family:'Nunito', sans-serif; }
+  .mini-btn.save{ background: var(--mirtilo); color:#fff; }
+  .mini-btn.save:hover{ background: var(--mirtilo-deep); }
+  .mini-btn.cancel{ background: var(--slate-soft); color: var(--ink-soft); }
+  .mini-btn.cancel:hover{ background: var(--slate); color:#fff; }
+
+  .agents-grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:18px;
+  }
+  .agent-card{
+    background: var(--paper); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding:20px;
+    display:flex; flex-direction:column; position:relative; transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .agent-card:hover{ transform: translateY(-3px); box-shadow: 0 16px 34px rgba(44,42,40,0.09), 0 4px 10px rgba(44,42,40,0.06); }
+  .agent-card-top{ display:flex; align-items:flex-start; gap:12px; margin-bottom:10px; }
+  .agent-icon{
+    width:46px; height:46px; border-radius:50%; background: var(--avela-light); color: var(--avela-deep);
+    display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;
+  }
+  .agent-info{ flex:1; min-width:0; }
+  .agent-name{ font-family:'Baloo 2', sans-serif; font-weight:700; font-size:16px; margin:0 0 2px; word-break:break-word; }
+  .agent-category{
+    display:inline-block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.3px;
+    background: var(--slate-soft); color: var(--ink-soft); padding:2px 9px; border-radius:100px;
+  }
+  .agent-desc{ font-size:12.5px; color: var(--ink-soft); font-weight:600; line-height:1.4; margin: 4px 0 14px; word-break:break-word; }
+  .agent-actions-row{ margin-top:auto; display:flex; align-items:center; gap:8px; }
+  .open-btn{
+    flex:1; text-align:center; text-decoration:none; background: var(--curacau); color:#fff; font-weight:800;
+    font-size:12.5px; padding:9px 12px; border-radius: var(--radius-sm); transition: background 0.2s;
+  }
+  .open-btn:hover{ background: var(--curacau-deep); }
+  .card-icon-actions{ position:absolute; top:14px; right:14px; display:flex; gap:2px; opacity:0; transition:opacity 0.15s; }
+  .agent-card:hover .card-icon-actions{ opacity:1; }
+  .card-mini-btn{ border:none; background:none; color: var(--ink-soft); font-size:13px; cursor:pointer; padding:3px 5px; transition:color 0.15s; }
+  .card-mini-btn:hover{ color: var(--mirtilo); }
+
+  .empty-state{
+    grid-column: 1 / -1; text-align:center; padding:50px 20px; color: var(--ink-soft); font-weight:600; font-size:14px;
+    background: var(--paper); border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  }
+
+  .toast-container{ position: fixed; bottom: 20px; right: 20px; z-index: 999; display:flex; flex-direction:column; gap:10px; max-width: 300px; }
+  @keyframes toastIn{ from{ opacity:0; transform:translateX(30px); } to{ opacity:1; transform:translateX(0); } }
+  .toast{
+    background: var(--paper); border-radius: var(--radius-md); box-shadow: var(--shadow); padding: 14px 16px;
+    display:flex; gap:10px; align-items:flex-start; border-left: 4px solid var(--curacau); animation: toastIn 0.3s ease;
+  }
+  .toast-emoji{ font-size:22px; flex-shrink:0; }
+  .toast-text{ font-size:13px; font-weight:700; color: var(--ink); line-height:1.35; }
+
+  footer{ text-align:center; color: var(--ink-soft); font-size: 12px; font-weight: 700; margin-top: 32px; opacity: 0.65; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="hero">
+    <div class="hero-icon">🤖</div>
+    <div class="hero-text">
+      <h1>Central de Agentes</h1>
+      <p>Todos os agentes Toqan da equipe, num só lugar para acessar e compartilhar</p>
+    </div>
+    <a class="back-link" href="./baymax.html">⬅ Voltar ao Baymax</a>
+  </header>
+
+  <div class="toolbar">
+    <input type="text" id="searchInput" class="search-input" placeholder="Buscar agente por nome, categoria ou descrição...">
+    <button class="tool-btn" id="refreshBtn" title="Buscar novos agentes publicados (agents.json)">🔄</button>
+    <button class="tool-btn" id="exportBtn" title="Exportar agents.json para publicar no GitHub">⬇</button>
+    <button class="add-btn" id="newAgentBtn">+ Novo agente</button>
+  </div>
+
+  <p class="sync-note">
+    <strong>Como funciona o compartilhamento:</strong> os agentes ficam salvos neste navegador. Para que a equipe toda veja os mesmos agentes, clique em <strong>⬇</strong>, baixe o arquivo <code>agents.json</code> atualizado e suba-o no GitHub (substituindo o atual). Quem já tiver o link pode clicar em <strong>🔄</strong> para trazer os agentes mais recentes publicados por qualquer pessoa da equipe.
+  </p>
+
+  <div class="agent-form" id="agentForm">
+    <h3 id="formTitle">Novo agente</h3>
+    <div class="form-row icon-row">
+      <input type="text" id="agentIcon" class="icon-input" maxlength="2" placeholder="🤖">
+      <input type="text" id="agentName" placeholder="Nome do agente" maxlength="60">
+      <input type="text" id="agentCategory" placeholder="Categoria (opcional)" maxlength="30">
+    </div>
+    <div class="form-row">
+      <input type="url" id="agentUrl" placeholder="Link do agente (https://...)" maxlength="500">
+    </div>
+    <div class="form-row">
+      <textarea id="agentDesc" placeholder="Descrição curta (opcional) — o que esse agente faz?" maxlength="200"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="mini-btn save" id="saveAgentBtn">Salvar</button>
+      <button class="mini-btn cancel" id="cancelAgentBtn">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="agents-grid" id="agentsGrid"></div>
+
+  <footer>Central de Agentes Toqan — parte do ecossistema Baymax.</footer>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'toqan-agents-data';
+  let agents = [];
+  let editingId = null;
+  let searchTerm = '';
+
+  const $ = (id) => document.getElementById(id);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function loadLocal(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) agents = JSON.parse(raw);
+    }catch(e){ console.error('Erro ao carregar agentes salvos:', e); }
+  }
+  function saveLocal(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(agents)); }
+    catch(e){ console.error('Erro ao salvar agentes:', e); }
+  }
+
+  function showToast(text){
+    const container = $('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<div class="toast-emoji">🤖</div><div class="toast-text">${escapeHtml(text)}</div>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.transition = 'opacity 0.4s, transform 0.4s';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(30px)';
+      setTimeout(() => toast.remove(), 400);
+    }, 5000);
+  }
+
+  async function fetchSharedAgents(silent){
+    const btn = $('refreshBtn');
+    if(btn) btn.classList.add('spinning');
+    try{
+      const res = await fetch('./agents.json', { cache: 'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const remote = await res.json();
+      let added = 0;
+      (remote || []).forEach(r => {
+        if(!r || !r.name || !r.url) return;
+        const exists = agents.some(a => a.id === r.id || a.url === r.url);
+        if(!exists){
+          agents.push({
+            id: r.id || uid(),
+            icon: r.icon || '🤖',
+            name: r.name,
+            category: r.category || '',
+            description: r.description || '',
+            url: r.url
+          });
+          added++;
+        }
+      });
+      saveLocal();
+      renderAgents();
+      if(added > 0){
+        showToast(`${added} agente(s) novo(s) trazido(s) da lista compartilhada!`);
+      } else if(!silent){
+        showToast('Sua lista já está com todos os agentes publicados.');
+      }
+    }catch(e){
+      console.error(e);
+      if(!silent){
+        showToast('Não encontrei um agents.json publicado ainda (ou algo falhou ao buscar).');
+      }
+    }finally{
+      if(btn) btn.classList.remove('spinning');
+    }
+  }
+
+  function downloadFile(filename, content, mime){
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  function exportAgents(){
+    if(agents.length === 0){ showToast('Nenhum agente para exportar ainda.'); return; }
+    const clean = agents.map(a => ({ id: a.id, icon: a.icon, name: a.name, category: a.category, description: a.description, url: a.url }));
+    downloadFile('agents.json', JSON.stringify(clean, null, 2), 'application/json');
+    showToast('agents.json baixado! Suba esse arquivo no GitHub para publicar para a equipe.');
+  }
+
+  function normalizeUrl(url){
+    const trimmed = url.trim();
+    if(!trimmed) return '';
+    if(!/^https?:\/\//i.test(trimmed)) return 'https://' + trimmed;
+    return trimmed;
+  }
+
+  function openForm(agent){
+    editingId = agent ? agent.id : null;
+    $('formTitle').textContent = agent ? 'Editar agente' : 'Novo agente';
+    $('agentIcon').value = agent ? agent.icon : '🤖';
+    $('agentName').value = agent ? agent.name : '';
+    $('agentCategory').value = agent ? agent.category : '';
+    $('agentUrl').value = agent ? agent.url : '';
+    $('agentDesc').value = agent ? agent.description : '';
+    $('agentForm').classList.add('open');
+    $('agentName').focus();
+  }
+  function closeForm(){
+    editingId = null;
+    $('agentForm').classList.remove('open');
+  }
+  function saveAgent(){
+    const name = $('agentName').value.trim();
+    const urlRaw = $('agentUrl').value.trim();
+    if(!name || !urlRaw){
+      showToast('Preencha ao menos o nome e o link do agente.');
+      return;
+    }
+    const icon = $('agentIcon').value.trim() || '🤖';
+    const category = $('agentCategory').value.trim();
+    const description = $('agentDesc').value.trim();
+    const url = normalizeUrl(urlRaw);
+
+    if(editingId){
+      const a = agents.find(x => x.id === editingId);
+      if(a){ a.icon = icon; a.name = name; a.category = category; a.description = description; a.url = url; }
+      showToast('Agente atualizado!');
+    } else {
+      agents.unshift({ id: uid(), icon, name, category, description, url });
+      showToast('Agente adicionado! Não esqueça de exportar (⬇) quando quiser publicar pra equipe.');
+    }
+    saveLocal();
+    closeForm();
+    renderAgents();
+  }
+  function deleteAgent(id){
+    if(!confirm('Remover este agente da sua lista?')) return;
+    agents = agents.filter(a => a.id !== id);
+    saveLocal();
+    renderAgents();
+  }
+
+  function renderAgents(){
+    const grid = $('agentsGrid');
+    const term = searchTerm.trim().toLowerCase();
+    const filtered = agents.filter(a => {
+      if(!term) return true;
+      return (a.name || '').toLowerCase().includes(term)
+        || (a.description || '').toLowerCase().includes(term)
+        || (a.category || '').toLowerCase().includes(term);
+    });
+
+    if(agents.length === 0){
+      grid.innerHTML = `<div class="empty-state">Nenhum agente cadastrado ainda.<br>Clique em "+ Novo agente" para adicionar o primeiro, ou em 🔄 para buscar a lista compartilhada pela equipe.</div>`;
+      return;
+    }
+    if(filtered.length === 0){
+      grid.innerHTML = `<div class="empty-state">Nenhum agente encontrado para "${escapeHtml(searchTerm)}".</div>`;
+      return;
+    }
+    grid.innerHTML = filtered.map(a => `
+      <div class="agent-card">
+        <div class="card-icon-actions">
+          <button class="card-mini-btn" data-id="${a.id}" data-action="edit" title="Editar">✎</button>
+          <button class="card-mini-btn" data-id="${a.id}" data-action="delete" title="Excluir">✕</button>
+        </div>
+        <div class="agent-card-top">
+          <div class="agent-icon">${escapeHtml(a.icon || '🤖')}</div>
+          <div class="agent-info">
+            <div class="agent-name">${escapeHtml(a.name)}</div>
+            ${a.category ? `<span class="agent-category">${escapeHtml(a.category)}</span>` : ''}
+          </div>
+        </div>
+        ${a.description ? `<div class="agent-desc">${escapeHtml(a.description)}</div>` : ''}
+        <div class="agent-actions-row">
+          <a class="open-btn" href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer">Abrir agente ↗</a>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  $('newAgentBtn').addEventListener('click', () => openForm(null));
+  $('cancelAgentBtn').addEventListener('click', closeForm);
+  $('saveAgentBtn').addEventListener('click', saveAgent);
+  $('refreshBtn').addEventListener('click', () => fetchSharedAgents(false));
+  $('exportBtn').addEventListener('click', exportAgents);
+  $('searchInput').addEventListener('input', (e) => { searchTerm = e.target.value; renderAgents(); });
+
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-action]');
+    if(!el) return;
+    const id = el.getAttribute('data-id');
+    const action = el.getAttribute('data-action');
+    if(action === 'edit'){
+      const a = agents.find(x => x.id === id);
+      if(a) openForm(a);
+    }
+    if(action === 'delete') deleteAgent(id);
+  });
+
+  loadLocal();
+  renderAgents();
+  fetchSharedAgents(true);
+})();
+</script>
+</body>
+</html>
