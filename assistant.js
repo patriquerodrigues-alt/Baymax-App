@@ -158,9 +158,9 @@
 
     try{
       const contents = history.map(h => ({ role: h.role, parts: [{ text: h.text }] }));
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
         body: JSON.stringify({
           contents,
           systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
@@ -171,7 +171,7 @@
       if(!res.ok){
         const errText = await res.text().catch(() => '');
         if(res.status === 401 || res.status === 403){
-          throw new Error(`HTTP ${res.status} — a chave não foi aceita. Confira se ela foi gerada em aistudio.google.com/apikey (não no Cloud Console/Vertex AI), e se a "Generative Language API" está habilitada. Veja o guia "como-conectar-gemini.md".`);
+          throw new Error(`HTTP ${res.status} — a chave não foi aceita. Confira se ela foi colada certinha (sem espaços) e se a "Generative Language API" está habilitada no projeto associado. Veja o guia "como-conectar-gemini.md".`);
         }
         throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200));
       }
