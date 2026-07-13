@@ -147,6 +147,13 @@
     font-family:'Nunito', sans-serif; transition: background 0.2s, color 0.2s;
   }
   .notif-toggle.on{ background: var(--curacau); color:#fff; }
+  .nav-link-btn{
+    border:none; background: var(--mirtilo); color:#fff; font-weight:800; font-size:12px;
+    cursor:pointer; padding:7px 14px; border-radius:100px; margin-top:12px; margin-left:10px;
+    font-family:'Nunito', sans-serif; text-decoration:none; display:inline-flex; align-items:center; gap:5px;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .nav-link-btn:hover{ background: var(--mirtilo-deep); transform: translateY(-2px); }
   .legend-panel{
     display:none;
     grid-template-columns: repeat(auto-fit, minmax(130px,1fr));
@@ -570,7 +577,7 @@
       <br>
       <button class="legend-toggle" id="legendToggle">Como funcionam as emoções do Baymax? <span class="arrow">▾</span></button>
       <button class="notif-toggle" id="notifToggleBtn">🔕 Ativar lembretes</button>
-      <a class="notif-toggle" href="./agentes.html" style="text-decoration:none; display:inline-block;">🤖 Central de Agentes</a>
+      <a class="nav-link-btn" href="./agentes.html">🤖 Central de Agentes</a>
       <div class="legend-panel" id="legendPanel"></div>
     </div>
   </header>
