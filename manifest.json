@@ -2,7 +2,7 @@
   "name": "Baymax - Assistente Diário",
   "short_name": "Baymax",
   "description": "Seu assistente pessoal de tarefas, notas e agenda",
-  "start_url": "./baymax.html",
+        "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
