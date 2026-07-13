@@ -63,9 +63,11 @@
   .back-link{
     display:inline-flex; align-items:center; gap:6px; text-decoration:none; color: var(--curacau-deep);
     font-weight:800; font-size:13px; background: var(--slate-soft); padding:9px 16px; border-radius:100px;
-    transition: background 0.2s, color 0.2s; flex-shrink:0;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease; flex-shrink:0;
   }
-  .back-link:hover{ background: var(--curacau); color:#fff; }
+  .back-link:hover{ background: var(--curacau); color:#fff; transform: translateX(-3px); }
+  .back-link .arrow{ display:inline-block; transition: transform 0.2s ease; }
+  .back-link:hover .arrow{ transform: translateX(-3px); }
 
   .toolbar{
     display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px;
@@ -112,7 +114,25 @@
   }
   input:focus, textarea:focus{ border-color: var(--mirtilo); box-shadow: 0 0 0 4px var(--ring); }
   textarea{ resize:vertical; min-height:60px; font-weight:500; }
-  .icon-input{ width:64px !important; text-align:center; font-size:20px; flex:0 0 64px !important; }
+  .icon-picker-wrap{ position:relative; flex:0 0 64px; }
+  .icon-picker-btn{
+    width:64px; height:44px; font-size:22px; text-align:center; cursor:pointer;
+    border:2px solid var(--slate-soft); border-radius: var(--radius-sm); background:#fff;
+    transition: border-color 0.2s ease, transform 0.15s ease; display:flex; align-items:center; justify-content:center;
+  }
+  .icon-picker-btn:hover{ border-color: var(--mirtilo); transform: scale(1.04); }
+  .icon-picker-popover{
+    display:none; position:absolute; top:calc(100% + 8px); left:0; z-index:30;
+    background:#fff; border-radius: var(--radius-md); box-shadow: var(--shadow); padding:12px;
+    width:252px; grid-template-columns: repeat(7, 1fr); gap:4px;
+  }
+  .icon-picker-popover.open{ display:grid; }
+  .icon-option{
+    border:none; background:none; font-size:19px; cursor:pointer; border-radius:8px; padding:5px 0;
+    transition: background 0.15s ease, transform 0.1s ease; line-height:1;
+  }
+  .icon-option:hover{ background: var(--slate-soft); transform: scale(1.15); }
+  .icon-option.selected{ background: var(--avela-light); }
   .form-actions{ display:flex; gap:10px; margin-top:6px; }
   .mini-btn{ border:none; border-radius:100px; padding:9px 20px; font-size:13px; font-weight:800; cursor:pointer; font-family:'Nunito', sans-serif; }
   .mini-btn.save{ background: var(--mirtilo); color:#fff; }
@@ -177,7 +197,7 @@
       <h1>Central de Agentes</h1>
       <p>Todos os agentes Toqan da equipe, num só lugar para acessar e compartilhar</p>
     </div>
-    <a class="back-link" href="./index.html">⬅ Voltar ao Baymax</a>
+    <a class="back-link" href="./"><span class="arrow">⬅</span> Voltar ao Baymax</a>
   </header>
 
   <div class="toolbar">
@@ -194,7 +214,10 @@
   <div class="agent-form" id="agentForm">
     <h3 id="formTitle">Novo agente</h3>
     <div class="form-row icon-row">
-      <input type="text" id="agentIcon" class="icon-input" maxlength="2" placeholder="🤖">
+      <div class="icon-picker-wrap">
+        <button type="button" class="icon-picker-btn" id="iconPickerBtn" title="Escolher ícone">🤖</button>
+        <div class="icon-picker-popover" id="iconPickerPopover"></div>
+      </div>
       <input type="text" id="agentName" placeholder="Nome do agente" maxlength="60">
       <input type="text" id="agentCategory" placeholder="Categoria (opcional)" maxlength="30">
     </div>
@@ -222,6 +245,13 @@
   const STORAGE_KEY = 'toqan-agents-data';
   let agents = [];
   let editingId = null;
+  let selectedIcon = '🤖';
+  const ICON_OPTIONS = [
+    '🤖','🧠','💬','🔍','⚙️','📊','📈','📅','✉️','📁',
+    '💡','🛠️','🎯','🔔','🗂️','🧩','🚀','🔐','🌐','📌',
+    '🎨','🧮','📚','🗣️','📝','⏱️','🔗','💰','🧑‍💻','📎',
+    '🧾','🗺️','📞','🛒','🧪','⚡','🔧','📦','🎓','❓'
+  ];
   let searchTerm = '';
 
   const $ = (id) => document.getElementById(id);
@@ -315,19 +345,39 @@
     return trimmed;
   }
 
+  function renderIconPicker(){
+    const pop = $('iconPickerPopover');
+    pop.innerHTML = ICON_OPTIONS.map(ic => `
+      <button type="button" class="icon-option ${ic === selectedIcon ? 'selected' : ''}" data-icon="${ic}">${ic}</button>
+    `).join('');
+  }
+  function setSelectedIcon(icon){
+    selectedIcon = icon;
+    $('iconPickerBtn').textContent = icon;
+    renderIconPicker();
+  }
+  function toggleIconPicker(open){
+    const pop = $('iconPickerPopover');
+    const shouldOpen = open !== undefined ? open : !pop.classList.contains('open');
+    if(shouldOpen) renderIconPicker();
+    pop.classList.toggle('open', shouldOpen);
+  }
+
   function openForm(agent){
     editingId = agent ? agent.id : null;
     $('formTitle').textContent = agent ? 'Editar agente' : 'Novo agente';
-    $('agentIcon').value = agent ? agent.icon : '🤖';
+    setSelectedIcon(agent ? (agent.icon || '🤖') : '🤖');
     $('agentName').value = agent ? agent.name : '';
     $('agentCategory').value = agent ? agent.category : '';
     $('agentUrl').value = agent ? agent.url : '';
     $('agentDesc').value = agent ? agent.description : '';
     $('agentForm').classList.add('open');
+    toggleIconPicker(false);
     $('agentName').focus();
   }
   function closeForm(){
     editingId = null;
+    toggleIconPicker(false);
     $('agentForm').classList.remove('open');
   }
   function saveAgent(){
@@ -337,7 +387,7 @@
       showToast('Preencha ao menos o nome e o link do agente.');
       return;
     }
-    const icon = $('agentIcon').value.trim() || '🤖';
+    const icon = selectedIcon || '🤖';
     const category = $('agentCategory').value.trim();
     const description = $('agentDesc').value.trim();
     const url = normalizeUrl(urlRaw);
@@ -406,8 +456,19 @@
   $('refreshBtn').addEventListener('click', () => fetchSharedAgents(false));
   $('exportBtn').addEventListener('click', exportAgents);
   $('searchInput').addEventListener('input', (e) => { searchTerm = e.target.value; renderAgents(); });
+  $('iconPickerBtn').addEventListener('click', (e) => { e.stopPropagation(); toggleIconPicker(); });
 
   document.addEventListener('click', (e) => {
+    const iconOption = e.target.closest('.icon-option');
+    if(iconOption){
+      setSelectedIcon(iconOption.getAttribute('data-icon'));
+      toggleIconPicker(false);
+      return;
+    }
+    if(!e.target.closest('.icon-picker-wrap')){
+      toggleIconPicker(false);
+    }
+
     const el = e.target.closest('[data-action]');
     if(!el) return;
     const id = el.getAttribute('data-id');
