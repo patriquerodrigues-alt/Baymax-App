@@ -8,7 +8,7 @@
   // diretamente aqui, o Google revoga chaves encontradas em repositórios públicos.
   // Veja o guia "como-conectar-gemini.md", seção "Proxy com Cloudflare Workers".
   const GEMINI_PROXY_URL_RAW = 'https://baymax-gemini-proxy.patrique-rodrigues.workers.dev';
-  const GEMINI_MODEL = 'gemini-2.5-flash';
+  const GEMINI_MODEL = 'gemini-3.5-flash';
   // =======================================
 
   const GEMINI_PROXY_URL = GEMINI_PROXY_URL_RAW.trim().replace(/^['"]|['"]$/g, '');
