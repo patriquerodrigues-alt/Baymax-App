@@ -3,15 +3,18 @@
    entre baymax (index.html) e agentes.html
    ============================================================ */
 (function(){
-  // ======= CONFIGURAÇÃO DO GEMINI =======
-  // Gere uma chave gratuita em https://aistudio.google.com/apikey e cole abaixo.
-  // Veja o guia "como-conectar-gemini.md" para o passo a passo e cuidados de segurança.
-  const GEMINI_API_KEY = 'AQ.Ab8RN6I1m8OkE0FbktNVvYMLNpjgIvq-FE6G8SNlzGRts9AEMA';
+  // ======= CONFIGURAÇÃO DO ASSISTENTE =======
+  // Cole aqui a URL do seu Cloudflare Worker (proxy seguro) — NÃO cole a chave do Gemini
+  // diretamente aqui, o Google revoga chaves encontradas em repositórios públicos.
+  // Veja o guia "como-conectar-gemini.md", seção "Proxy com Cloudflare Workers".
+  const GEMINI_PROXY_URL_RAW = 'https://baymax-gemini-proxy.patrique-rodrigues.workers.dev';
   const GEMINI_MODEL = 'gemini-2.5-flash';
   // =======================================
 
+  const GEMINI_PROXY_URL = GEMINI_PROXY_URL_RAW.trim().replace(/^['"]|['"]$/g, '');
+
   function isGeminiConfigured(){
-    return GEMINI_API_KEY && !GEMINI_API_KEY.includes('COLE_SUA_API_KEY_AQUI');
+    return GEMINI_PROXY_URL && !GEMINI_PROXY_URL.includes('COLE_A_URL_DO_SEU_WORKER_AQUI');
   }
 
   const SYSTEM_INSTRUCTION = 'Você é o assistente rápido do app Baymax (um organizador pessoal com tarefas em Kanban, agenda e anotações, e a Central de Agentes Toqan). Responda em português do Brasil, de forma direta, curta e útil — no máximo uns 3-4 parágrafos curtos ou uma lista objetiva. Se a pergunta for sobre como usar o app, explique de forma simples. Se for uma dúvida qualquer do dia a dia, ajude normalmente, como um assistente rápido.';
@@ -145,7 +148,7 @@
 
     if(!isGeminiConfigured()){
       addBubble('user', text);
-      addBubble('model', '⚠️ O assistente ainda não foi configurado. É preciso colar uma chave da API do Gemini no arquivo "assistant.js" (procure por GEMINI_API_KEY). Veja o guia "como-conectar-gemini.md" para o passo a passo.', true);
+      addBubble('model', '⚠️ O assistente ainda não foi configurado. É preciso publicar o proxy (Cloudflare Worker) e colar a URL dele no arquivo "assistant.js" (procure por GEMINI_PROXY_URL_RAW). Veja o guia "como-conectar-gemini.md", seção "Proxy com Cloudflare Workers".', true);
       inputEl.value = '';
       return;
     }
@@ -158,10 +161,11 @@
 
     try{
       const contents = history.map(h => ({ role: h.role, parts: [{ text: h.text }] }));
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+      const res = await fetch(GEMINI_PROXY_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: GEMINI_MODEL,
           contents,
           systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
           generationConfig: { maxOutputTokens: 500, temperature: 0.6 }
@@ -170,10 +174,7 @@
       removeTypingIndicator();
       if(!res.ok){
         const errText = await res.text().catch(() => '');
-        if(res.status === 401 || res.status === 403){
-          throw new Error(`HTTP ${res.status} — a chave não foi aceita. Confira se ela foi colada certinha (sem espaços) e se a "Generative Language API" está habilitada no projeto associado. Veja o guia "como-conectar-gemini.md".`);
-        }
-        throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200));
+        throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200) + '\n\nConfira se a URL do proxy está certa e se o GEMINI_API_KEY foi salvo nas variáveis do Worker (veja o guia).');
       }
       const data = await res.json();
       const reply = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts
@@ -189,7 +190,7 @@
     }catch(e){
       removeTypingIndicator();
       console.error(e);
-      addBubble('model', '⚠️ Erro ao falar com o Gemini: ' + e.message, true);
+      addBubble('model', '⚠️ Erro ao falar com o assistente: ' + e.message, true);
     }finally{
       sendBtn.disabled = false;
     }
