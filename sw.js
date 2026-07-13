@@ -1,6 +1,6 @@
-const CACHE_NAME = 'baymax-cache-v1';
+const CACHE_NAME = 'baymax-cache-v2';
 const FILES_TO_CACHE = [
-  './baymax.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
