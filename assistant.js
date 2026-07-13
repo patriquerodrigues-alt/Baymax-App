@@ -11,7 +11,7 @@
   // =======================================
 
   function isGeminiConfigured(){
-    return GEMINI_API_KEY && !GEMINI_API_KEY.includes('AQ.Ab8RN6JQdb-3rjEZtGV6tDebW3d4DdCE8fRepfkAaxNgOpmsPw');
+    return GEMINI_API_KEY && !GEMINI_API_KEY.includes('COLE_SUA_API_KEY_AQUI');
   }
 
   const SYSTEM_INSTRUCTION = 'Você é o assistente rápido do app Baymax (um organizador pessoal com tarefas em Kanban, agenda e anotações, e a Central de Agentes Toqan). Responda em português do Brasil, de forma direta, curta e útil — no máximo uns 3-4 parágrafos curtos ou uma lista objetiva. Se a pergunta for sobre como usar o app, explique de forma simples. Se for uma dúvida qualquer do dia a dia, ajude normalmente, como um assistente rápido.';
