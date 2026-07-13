@@ -6,7 +6,7 @@
   // ======= CONFIGURAÇÃO DO GEMINI =======
   // Gere uma chave gratuita em https://aistudio.google.com/apikey e cole abaixo.
   // Veja o guia "como-conectar-gemini.md" para o passo a passo e cuidados de segurança.
-  const GEMINI_API_KEY = 'AQ.Ab8RN6JQdb-3rjEZtGV6tDebW3d4DdCE8fRepfkAaxNgOpmsPw';
+  const GEMINI_API_KEY = 'AQ.Ab8RN6LGAk7CHpqhPXEmIMaBFL6Aw2AZH_Snx7KHgitntarw7Q';
   const GEMINI_MODEL = 'gemini-2.5-flash';
   // =======================================
 
@@ -158,9 +158,9 @@
 
     try{
       const contents = history.map(h => ({ role: h.role, parts: [{ text: h.text }] }));
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents,
           systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
@@ -170,6 +170,9 @@
       removeTypingIndicator();
       if(!res.ok){
         const errText = await res.text().catch(() => '');
+        if(res.status === 401 || res.status === 403){
+          throw new Error(`HTTP ${res.status} — a chave não foi aceita. Confira se ela foi gerada em aistudio.google.com/apikey (não no Cloud Console/Vertex AI), e se a "Generative Language API" está habilitada. Veja o guia "como-conectar-gemini.md".`);
+        }
         throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200));
       }
       const data = await res.json();
