@@ -52,6 +52,7 @@
   .hero::after{
     content:""; position:absolute; right:-60px; top:-60px; width:200px; height:200px; border-radius:50%;
     background: radial-gradient(circle, rgba(76,63,122,0.10), transparent 70%);
+    pointer-events: none;
   }
   .hero-icon{
     width:64px; height:64px; border-radius:50%; background: var(--mirtilo); color:#fff;
@@ -64,6 +65,7 @@
     display:inline-flex; align-items:center; gap:6px; text-decoration:none; color: var(--curacau-deep);
     font-weight:800; font-size:13px; background: var(--slate-soft); padding:9px 16px; border-radius:100px;
     transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease; flex-shrink:0;
+    position:relative; z-index:2;
   }
   .back-link:hover{ background: var(--curacau); color:#fff; transform: translateX(-3px); }
   .back-link .arrow{ display:inline-block; transition: transform 0.2s ease; }
