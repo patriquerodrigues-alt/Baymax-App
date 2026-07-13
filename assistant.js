@@ -7,7 +7,7 @@
   // Gere uma chave gratuita em https://aistudio.google.com/apikey e cole abaixo.
   // Veja o guia "como-conectar-gemini.md" para o passo a passo e cuidados de segurança.
   const GEMINI_API_KEY = 'AQ.Ab8RN6JQdb-3rjEZtGV6tDebW3d4DdCE8fRepfkAaxNgOpmsPw';
-  const GEMINI_MODEL = 'gemini-3.5-flash';
+  const GEMINI_MODEL = 'gemini-2.5-flash';
   // =======================================
 
   function isGeminiConfigured(){
