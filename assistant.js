@@ -6,12 +6,12 @@
   // ======= CONFIGURAÇÃO DO GEMINI =======
   // Gere uma chave gratuita em https://aistudio.google.com/apikey e cole abaixo.
   // Veja o guia "como-conectar-gemini.md" para o passo a passo e cuidados de segurança.
-  const GEMINI_API_KEY = 'COLE_SUA_API_KEY_AQUI';
-  const GEMINI_MODEL = 'gemini-2.5-flash';
+  const GEMINI_API_KEY = 'AQ.Ab8RN6JQdb-3rjEZtGV6tDebW3d4DdCE8fRepfkAaxNgOpmsPw';
+  const GEMINI_MODEL = 'gemini-3.5-flash';
   // =======================================
 
   function isGeminiConfigured(){
-    return GEMINI_API_KEY && !GEMINI_API_KEY.includes('COLE_SUA_API_KEY_AQUI');
+    return GEMINI_API_KEY && !GEMINI_API_KEY.includes('AQ.Ab8RN6JQdb-3rjEZtGV6tDebW3d4DdCE8fRepfkAaxNgOpmsPw');
   }
 
   const SYSTEM_INSTRUCTION = 'Você é o assistente rápido do app Baymax (um organizador pessoal com tarefas em Kanban, agenda e anotações, e a Central de Agentes Toqan). Responda em português do Brasil, de forma direta, curta e útil — no máximo uns 3-4 parágrafos curtos ou uma lista objetiva. Se a pergunta for sobre como usar o app, explique de forma simples. Se for uma dúvida qualquer do dia a dia, ajude normalmente, como um assistente rápido.';
