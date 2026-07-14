@@ -142,6 +142,17 @@
     if(el) el.remove();
   }
 
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  async function callProxy(payload){
+    const res = await fetch(GEMINI_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res;
+  }
+
   async function sendMessage(){
     const text = inputEl.value.trim();
     if(!text) return;
@@ -159,21 +170,34 @@
     sendBtn.disabled = true;
     addTypingIndicator();
 
+    const payload = {
+      model: GEMINI_MODEL,
+      contents: history.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
+      systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+      generationConfig: { maxOutputTokens: 500, temperature: 0.6 }
+    };
+
+    const MAX_RETRIES = 2;
+    let lastError = null;
+
     try{
-      const contents = history.map(h => ({ role: h.role, parts: [{ text: h.text }] }));
-      const res = await fetch(GEMINI_PROXY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: GEMINI_MODEL,
-          contents,
-          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-          generationConfig: { maxOutputTokens: 500, temperature: 0.6 }
-        })
-      });
+      let res = null;
+      for(let attempt = 0; attempt <= MAX_RETRIES; attempt++){
+        res = await callProxy(payload);
+        if(res.ok) break;
+        if(res.status === 503 && attempt < MAX_RETRIES){
+          await sleep(1500 * (attempt + 1)); // espera um pouco mais a cada tentativa
+          continue;
+        }
+        break;
+      }
       removeTypingIndicator();
+
       if(!res.ok){
         const errText = await res.text().catch(() => '');
+        if(res.status === 503){
+          throw new Error('O modelo do Gemini está sobrecarregado no momento (isso é do lado do Google, não da sua configuração). Tentei de novo automaticamente algumas vezes, mas ainda não emplacou — espere um pouco e tente enviar de novo.');
+        }
         throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200) + '\n\nConfira se a URL do proxy está certa e se o GEMINI_API_KEY foi salvo nas variáveis do Worker (veja o guia).');
       }
       const data = await res.json();
@@ -190,7 +214,7 @@
     }catch(e){
       removeTypingIndicator();
       console.error(e);
-      addBubble('model', '⚠️ Erro ao falar com o assistente: ' + e.message, true);
+      addBubble('model', '⚠️ ' + e.message, true);
     }finally{
       sendBtn.disabled = false;
     }
