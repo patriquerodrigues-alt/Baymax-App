@@ -317,6 +317,10 @@
   .badge.moderada{ background:#FCF3D9; color:#9C7A12; }
   .badge.complexa{ background:#FCE6D2; color:#B25A12; }
   .badge.muitocomplexa{ background:#FBE1E1; color:#B23A3A; }
+  .badge.low{ background:#E7F5EA; color:#3B7D4C; }
+  .badge.med{ background:#FCF3D9; color:#9C7A12; }
+  .badge.high{ background:#FBE1E1; color:#B23A3A; }
+  .note-card-date{ font-size:10px; color: var(--ink-soft); font-weight:800; text-transform:uppercase; letter-spacing:0.3px; margin-top:6px; }
   .badge.time{ background: var(--avela-light); color: var(--avela-deep); }
   .badge.scheduled{ background:#E3F6F9; color: var(--curacau-deep); }
   .badge.overdue{ background: var(--crit-red); color:#fff; }
@@ -509,6 +513,22 @@
   }
   .kanban-col-header:hover .kanban-col-del{ opacity:1; }
   .kanban-col-del:hover{ color: var(--crit-red); }
+  .kanban-col-edit{
+    border:none; background:none; color:var(--ink-soft); opacity:0.4; font-size:11px; cursor:pointer;
+    margin-left:2px; padding:1px 4px; transition:opacity 0.15s, color 0.15s; flex-shrink:0;
+  }
+  .kanban-col-header:hover .kanban-col-edit{ opacity:1; }
+  .kanban-col-edit:hover{ color: var(--mirtilo); }
+  .kanban-col-label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .kanban-col-label.empty{ font-style:italic; color:var(--ink-soft); font-weight:600; }
+  .kanban-col-header-edit{ padding:8px; background:#fff; border-radius:var(--radius-sm); margin-bottom:8px; box-shadow:var(--shadow); }
+  .col-name-input{ width:100%; font-size:12.5px; padding:7px 10px; margin-bottom:8px; }
+  .col-color-row{ display:flex; gap:7px; margin-bottom:10px; flex-wrap:wrap; }
+  button.col-color-swatch{
+    width:22px; height:22px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0; flex-shrink:0;
+  }
+  button.col-color-swatch.selected{ border-color:var(--ink); }
+  .col-edit-actions{ display:flex; gap:6px; }
   .kanban-dot.purple{ background: var(--mirtilo); }
   .kanban-dot.teal{ background: var(--curacau); }
   .kanban-dot.orange{ background: var(--avela); }
@@ -618,57 +638,62 @@
 
   <div class="summary-strip" id="summaryStrip"></div>
 
-  <div class="side-grid">
-    <section class="card">
-      <h2>
-        <svg class="card-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="#1CA9C9" stroke-width="2.2"/><path d="M8 9h8M8 13h8M8 17h4" stroke="#1CA9C9" stroke-width="2" stroke-linecap="round"/></svg>
-        Anotações
-      </h2>
-      <p class="card-sub">Crie pelo título — a descrição completa você adiciona ao abrir a anotação</p>
-      <div class="add-row">
-        <input type="text" id="noteInput" placeholder="Título da anotação..." maxlength="80">
-        <select id="notePriority" title="Prioridade">
-          <option value="low">Baixa</option>
-          <option value="med" selected>Média</option>
-          <option value="high">Alta</option>
-        </select>
-        <button class="icon-btn" id="addNoteBtn" title="Adicionar anotação">+</button>
+  <section class="card">
+    <h2>
+      <svg class="card-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="#1CA9C9" stroke-width="2.2"/><path d="M8 9h8M8 13h8M8 17h4" stroke="#1CA9C9" stroke-width="2" stroke-linecap="round"/></svg>
+      Anotações — Kanban
+    </h2>
+    <p class="card-sub">Crie pelo título e arraste os cartões entre as colunas pra organizar do seu jeito</p>
+    <div class="add-row">
+      <input type="text" id="noteInput" placeholder="Título da anotação..." maxlength="80">
+      <select id="notePriority" title="Prioridade">
+        <option value="low">Baixa</option>
+        <option value="med" selected>Média</option>
+        <option value="high">Alta</option>
+      </select>
+      <button class="icon-btn" id="addNoteBtn" title="Adicionar anotação">+</button>
+    </div>
+    <div class="kanban-board" id="noteKanbanBoard"></div>
+    <div class="kanban-add-col-row">
+      <button class="tab-btn" id="addNoteColumnToggleBtn">+ Nova coluna</button>
+      <div id="addNoteColumnForm">
+        <input type="text" id="newNoteColumnName" placeholder="Nome da nova coluna (ex: Arquivadas)" maxlength="30">
+        <button class="icon-btn" id="confirmAddNoteColumnBtn" title="Adicionar coluna">+</button>
       </div>
-      <ul class="list" id="noteList"></ul>
-    </section>
+    </div>
+  </section>
 
-    <section class="card">
-      <h2>
-        <svg class="card-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#1CA9C9" stroke-width="2.2"/><path d="M12 7v5l3 3" stroke="#1CA9C9" stroke-width="2.2" stroke-linecap="round"/></svg>
-        Agenda
-      </h2>
-      <p class="card-sub">Organize seus compromissos navegando por dia</p>
-      <div class="agenda-filter-row">
-        <button class="agenda-nav-btn" id="agendaPrevBtn" title="Dia anterior">◀</button>
-        <button class="agenda-today-btn" id="agendaTodayBtn">Hoje</button>
-        <button class="agenda-nav-btn" id="agendaNextBtn" title="Próximo dia">▶</button>
-        <input type="date" id="agendaDateFilter" title="Ir para uma data específica">
-      </div>
-      <div class="agenda-toolbar">
-        <button class="agenda-tool-btn" id="googleConnectBtn" title="Conectar ao Google Agenda">🔗</button>
-        <button class="agenda-tool-btn" id="googleRefreshBtn" title="Atualizar agenda com o Google">🔄</button>
-        <button class="agenda-tool-btn" id="exportIcsBtn" title="Exportar dia selecionado (.ics)">⬇</button>
-        <button class="agenda-tool-btn" id="agendaHelpToggle" title="Como funciona?">ℹ️</button>
-      </div>
-      <div class="agenda-help-panel" id="agendaHelpPanel">
-        <strong>🔗 Conectar</strong> — autoriza o acesso ao seu Google Agenda. Depois de conectado, a agenda se atualiza sozinha a cada 2 minutos, e também na hora sempre que você voltar pra essa aba.<br>
-        <strong>🔄 Atualizar</strong> — força uma sincronização imediata: busca os últimos 7 dias + próximos 7 dias, adiciona o que for novo e corrige o que mudou (horário, participantes, links).<br>
-        <strong>⬇ Exportar</strong> — baixa um arquivo .ics do dia selecionado, pra importar manualmente no Google Agenda (não precisa estar conectado).
-      </div>
-      <p class="agenda-filter-label" id="agendaFilterLabel"></p>
-      <div class="agenda-add">
-        <input type="time" id="agendaTime">
-        <input type="text" id="agendaInput" placeholder="Compromisso...">
-        <button class="icon-btn" id="addAgendaBtn" title="Adicionar compromisso">+</button>
-      </div>
-      <ul class="list" id="agendaList"></ul>
-    </section>
-  </div>
+  <section class="card">
+    <h2>
+      <svg class="card-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#1CA9C9" stroke-width="2.2"/><path d="M12 7v5l3 3" stroke="#1CA9C9" stroke-width="2.2" stroke-linecap="round"/></svg>
+      Agenda
+    </h2>
+    <p class="card-sub">Organize seus compromissos navegando por dia</p>
+    <div class="agenda-filter-row">
+      <button class="agenda-nav-btn" id="agendaPrevBtn" title="Dia anterior">◀</button>
+      <button class="agenda-today-btn" id="agendaTodayBtn">Hoje</button>
+      <button class="agenda-nav-btn" id="agendaNextBtn" title="Próximo dia">▶</button>
+      <input type="date" id="agendaDateFilter" title="Ir para uma data específica">
+    </div>
+    <div class="agenda-toolbar">
+      <button class="agenda-tool-btn" id="googleConnectBtn" title="Conectar ao Google Agenda">🔗</button>
+      <button class="agenda-tool-btn" id="googleRefreshBtn" title="Atualizar agenda com o Google">🔄</button>
+      <button class="agenda-tool-btn" id="exportIcsBtn" title="Exportar dia selecionado (.ics)">⬇</button>
+      <button class="agenda-tool-btn" id="agendaHelpToggle" title="Como funciona?">ℹ️</button>
+    </div>
+    <div class="agenda-help-panel" id="agendaHelpPanel">
+      <strong>🔗 Conectar</strong> — autoriza o acesso ao seu Google Agenda. Depois de conectado, a agenda se atualiza sozinha a cada 2 minutos, e também na hora sempre que você voltar pra essa aba.<br>
+      <strong>🔄 Atualizar</strong> — força uma sincronização imediata: busca os últimos 7 dias + próximos 7 dias, adiciona o que for novo e corrige o que mudou (horário, participantes, links).<br>
+      <strong>⬇ Exportar</strong> — baixa um arquivo .ics do dia selecionado, pra importar manualmente no Google Agenda (não precisa estar conectado).
+    </div>
+    <p class="agenda-filter-label" id="agendaFilterLabel"></p>
+    <div class="agenda-add">
+      <input type="time" id="agendaTime">
+      <input type="text" id="agendaInput" placeholder="Compromisso...">
+      <button class="icon-btn" id="addAgendaBtn" title="Adicionar compromisso">+</button>
+    </div>
+    <ul class="list" id="agendaList"></ul>
+  </section>
 
   <div class="modal-overlay" id="noteModalOverlay">
     <div class="modal-box">
@@ -702,7 +727,7 @@
 (function(){
 
   const STORAGE_KEY = 'baymax-data';
-  let state = { tasks: [], notes: [], agenda: [], recurring: [], kanbanColumns: null };
+  let state = { tasks: [], notes: [], agenda: [], recurring: [], kanbanColumns: null, noteColumns: null };
   const DEFAULT_KANBAN_COLUMNS = [
     { id: 'pending', label: 'Pendente', dot: 'red' },
     { id: 'inprogress', label: 'Em Andamento', dot: 'yellow' },
@@ -779,10 +804,17 @@
           if(n.priority === undefined) n.priority = 'med';
           if(n.edited === undefined) n.edited = false;
           if(n.title === undefined){ n.title = n.text || '(sem título)'; n.text = ''; }
+          if(n.status === undefined) n.status = 'ideas';
         });
         state.recurring.forEach(r => { if(r.time === undefined) r.time = null; });
         if(!state.kanbanColumns || !Array.isArray(state.kanbanColumns) || state.kanbanColumns.length === 0){
           state.kanbanColumns = JSON.parse(JSON.stringify(DEFAULT_KANBAN_COLUMNS));
+        }
+        if(!state.noteColumns || !Array.isArray(state.noteColumns) || state.noteColumns.length === 0){
+          state.noteColumns = JSON.parse(JSON.stringify(DEFAULT_NOTE_COLUMNS));
+        } else {
+          const validIds = state.noteColumns.map(c => c.id);
+          state.notes.forEach(n => { if(!validIds.includes(n.status)) n.status = state.noteColumns[0].id; });
         }
         state.agenda.forEach(a => {
           if(a.fromGoogle === undefined) a.fromGoogle = false;
@@ -799,9 +831,13 @@
     if(!state.kanbanColumns || !Array.isArray(state.kanbanColumns) || state.kanbanColumns.length === 0){
       state.kanbanColumns = JSON.parse(JSON.stringify(DEFAULT_KANBAN_COLUMNS));
     }
+    if(!state.noteColumns || !Array.isArray(state.noteColumns) || state.noteColumns.length === 0){
+      state.noteColumns = JSON.parse(JSON.stringify(DEFAULT_NOTE_COLUMNS));
+    }
     loaded = true;
     lastKnownDate = todayStr();
     renderLegend();
+    renderNoteKanbanSkeleton();
     renderAll();
   }
 
@@ -816,14 +852,22 @@
   }
 
 
-  // ---------- NOTES ----------
+  // ---------- NOTES (Kanban) ----------
+  const DEFAULT_NOTE_COLUMNS = [
+    { id: 'ideas', label: 'Ideias', dot: 'red' },
+    { id: 'doing', label: 'Em Andamento', dot: 'yellow' },
+    { id: 'done', label: 'Prontas', dot: 'green' }
+  ];
+  const NOTE_PRIORITY_LABEL = { low: 'Baixa', med: 'Média', high: 'Alta' };
   let modalNoteId = null;
+
   function addNote(){
     const input = $('noteInput');
     const title = input.value.trim();
     if(!title) return;
     const priority = $('notePriority').value;
-    state.notes.unshift({ id: uid(), title, text: '', priority, created: Date.now(), edited: false });
+    const firstCol = (state.noteColumns[0] || DEFAULT_NOTE_COLUMNS[0]).id;
+    state.notes.unshift({ id: uid(), title, text: '', priority, status: firstCol, created: Date.now(), edited: false });
     input.value = '';
     saveData();
     renderAll();
@@ -833,6 +877,13 @@
     saveData();
     renderAll();
     if(modalNoteId === id) closeNoteModal();
+  }
+  function setNoteStatus(id, status){
+    const n = state.notes.find(x => x.id === id);
+    if(!n) return;
+    n.status = status;
+    saveData();
+    renderNoteKanban();
   }
   function openNoteModal(id){
     const n = state.notes.find(x => x.id === id);
@@ -860,31 +911,159 @@
     n.edited = true;
     saveData();
     closeNoteModal();
-    renderNotes();
+    renderNoteKanban();
   }
   function deleteNoteModal(){
     if(!modalNoteId) return;
     deleteNote(modalNoteId);
   }
-  function renderNotes(){
-    const list = $('noteList');
-    if(state.notes.length === 0){
-      list.innerHTML = '<div class="empty-state">Nenhuma anotação ainda.<br>Guarde aqui suas ideias soltas.</div>';
-      return;
-    }
-    list.innerHTML = state.notes.map(n => {
-      const dateLabel = new Date(n.created).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-      return `
-        <li class="note-item note-${n.priority}" data-action="open-note" data-id="${n.id}">
-          <div class="note-actions">
-            <button class="mini-icon-btn" data-id="${n.id}" data-action="delete-note" title="Excluir">✕</button>
+
+  function noteCardHtml(n){
+    const dateLabel = new Date(n.created).toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
+    const otherCols = state.noteColumns.filter(c => c.id !== n.status);
+    return `
+      <div class="kanban-card" draggable="true" data-id="${n.id}">
+        <div class="kanban-card-top">
+          <div class="kanban-card-text" data-action="open-note" data-id="${n.id}" style="cursor:pointer;">${escapeHtml(n.title)}</div>
+          <div class="kanban-card-actions">
+            <button class="kanban-mini-btn" data-id="${n.id}" data-action="delete-note" title="Excluir">✕</button>
           </div>
-          <div class="note-text">${escapeHtml(n.title)}</div>
-          ${n.text ? `<div class="task-desc">${escapeHtml(n.text.length > 90 ? n.text.slice(0,90) + '…' : n.text)}</div>` : ''}
-          <span class="note-date">${dateLabel}${n.edited ? ' · editado' : ''}</span>
-        </li>
-      `;
+        </div>
+        ${n.text ? `<div class="task-desc" data-action="open-note" data-id="${n.id}" style="cursor:pointer;">${escapeHtml(n.text.length > 90 ? n.text.slice(0,90) + '…' : n.text)}</div>` : ''}
+        <div class="task-meta">
+          <span class="badge ${n.priority}">${NOTE_PRIORITY_LABEL[n.priority]}</span>
+        </div>
+        <div class="note-card-date">${dateLabel}${n.edited ? ' · editado' : ''}</div>
+        <div class="kanban-move-row">
+          <select class="move-select note-move-select" data-id="${n.id}">
+            <option value="">Mover para...</option>
+            ${otherCols.map(c => `<option value="${c.id}">${c.label ? escapeHtml(c.label) : 'Sem nome'}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    `;
+  }
+  const NOTE_COLUMN_COLORS = ['red','yellow','green','purple','teal','orange'];
+  let editingNoteColumnId = null;
+
+  function renderNoteKanbanSkeleton(){
+    const board = $('noteKanbanBoard');
+    board.innerHTML = state.noteColumns.map(c => {
+      if(editingNoteColumnId === c.id){
+        return `
+          <div class="kanban-col" data-col-id="${c.id}">
+            <div class="kanban-col-header-edit">
+              <input type="text" class="col-name-input" id="colNameInput-${c.id}" value="${escapeHtml(c.label)}" placeholder="Nome da coluna (pode deixar em branco)" maxlength="30">
+              <div class="col-color-row">
+                ${NOTE_COLUMN_COLORS.map(color => `
+                  <button type="button" class="col-color-swatch kanban-dot ${color} ${c.dot === color ? 'selected' : ''}" data-action="pick-note-column-color" data-col-id="${c.id}" data-color="${color}" title="${color}"></button>
+                `).join('')}
+              </div>
+              <div class="col-edit-actions">
+                <button class="mini-btn save" data-col-id="${c.id}" data-action="save-note-column-name">Salvar</button>
+                <button class="mini-btn cancel" data-action="cancel-note-column-edit">Cancelar</button>
+              </div>
+            </div>
+            <div class="kanban-col-body" data-note-status="${c.id}" id="noteColBody-${c.id}"></div>
+          </div>
+        `;
+      }
+      return `
+      <div class="kanban-col" data-col-id="${c.id}">
+        <div class="kanban-col-header" draggable="true" title="Arraste para reordenar as colunas">
+          <span class="kanban-drag-handle">⠿</span>
+          <span class="kanban-dot ${c.dot}"></span>
+          <span class="kanban-col-label${c.label ? '' : ' empty'}">${c.label ? escapeHtml(c.label) : 'Sem nome'}</span>
+          <span class="kanban-count" id="noteCount-${c.id}">0</span>
+          <button class="kanban-col-edit" data-col-id="${c.id}" data-action="edit-note-column" title="Renomear ou trocar a cor">✎</button>
+          ${(c.id !== 'ideas' && c.id !== 'doing' && c.id !== 'done') ? `<button class="kanban-col-del" data-col-id="${c.id}" data-action="delete-note-column" title="Remover coluna">✕</button>` : ''}
+        </div>
+        <div class="kanban-col-body" data-note-status="${c.id}" id="noteColBody-${c.id}"></div>
+      </div>
+    `;
     }).join('');
+  }
+  function editNoteColumn(colId){
+    editingNoteColumnId = colId;
+    renderNoteKanbanSkeleton();
+    renderNoteKanban();
+    const el = $('colNameInput-' + colId);
+    if(el){ el.focus(); el.select(); }
+  }
+  function cancelNoteColumnEdit(){
+    editingNoteColumnId = null;
+    renderNoteKanbanSkeleton();
+    renderNoteKanban();
+  }
+  function saveNoteColumnName(colId){
+    const c = state.noteColumns.find(x => x.id === colId);
+    if(!c) return;
+    const input = $('colNameInput-' + colId);
+    if(input) c.label = input.value.trim(); // vazio é permitido de propósito
+    editingNoteColumnId = null;
+    saveData();
+    renderNoteKanbanSkeleton();
+    renderNoteKanban();
+  }
+  function pickNoteColumnColor(colId, color){
+    const c = state.noteColumns.find(x => x.id === colId);
+    if(!c) return;
+    c.dot = color;
+    saveData();
+    renderNoteKanbanSkeleton();
+    renderNoteKanban();
+    const el = $('colNameInput-' + colId);
+    if(el) el.focus();
+  }
+  function renderNoteKanban(){
+    const cols = {};
+    state.noteColumns.forEach(c => { cols[c.id] = []; });
+    state.notes.forEach(n => { (cols[n.status] = cols[n.status] || []).push(n); });
+    state.noteColumns.forEach(c => {
+      const countEl = $('noteCount-' + c.id);
+      const bodyEl = $('noteColBody-' + c.id);
+      if(!countEl || !bodyEl) return;
+      const list = cols[c.id] || [];
+      countEl.textContent = list.length;
+      bodyEl.innerHTML = list.length > 0
+        ? list.map(n => noteCardHtml(n)).join('')
+        : '<div class="kanban-empty">Nenhuma anotação aqui.<br>Arraste um cartão ou crie uma nova.</div>';
+    });
+  }
+  function addNoteColumn(){
+    const input = $('newNoteColumnName');
+    const label = input.value.trim();
+    if(!label) return;
+    const dots = ['purple', 'teal', 'orange'];
+    const customCount = state.noteColumns.filter(c => !['ideas','doing','done'].includes(c.id)).length;
+    const newCol = { id: 'notecol_' + uid(), label, dot: dots[customCount % dots.length] };
+    const doneIndex = state.noteColumns.findIndex(c => c.id === 'done');
+    state.noteColumns.splice(doneIndex >= 0 ? doneIndex : state.noteColumns.length, 0, newCol);
+    input.value = '';
+    $('addNoteColumnForm').style.display = 'none';
+    saveData();
+    renderNoteKanbanSkeleton();
+    renderNoteKanban();
+  }
+  function deleteNoteColumn(colId){
+    if(!confirm('Remover esta coluna? As anotações nela voltarão para a primeira coluna.')) return;
+    const fallback = state.noteColumns[0].id;
+    state.notes.forEach(n => { if(n.status === colId) n.status = fallback; });
+    state.noteColumns = state.noteColumns.filter(c => c.id !== colId);
+    saveData();
+    renderNoteKanbanSkeleton();
+    renderNoteKanban();
+  }
+  function reorderNoteColumn(draggedColId, targetColId){
+    if(draggedColId === targetColId) return;
+    const fromIndex = state.noteColumns.findIndex(c => c.id === draggedColId);
+    const toIndex = state.noteColumns.findIndex(c => c.id === targetColId);
+    if(fromIndex === -1 || toIndex === -1) return;
+    const [moved] = state.noteColumns.splice(fromIndex, 1);
+    state.noteColumns.splice(toIndex, 0, moved);
+    saveData();
+    renderNoteKanbanSkeleton();
+    renderNoteKanban();
   }
 
   // ---------- AGENDA ----------
@@ -1350,7 +1529,7 @@
   }
 
   function renderAll(){
-    renderNotes();
+    renderNoteKanban();
     renderAgenda();
     renderSummary();
     renderMood();
@@ -1359,6 +1538,14 @@
   // ---------- EVENTS ----------
   $('addNoteBtn').addEventListener('click', addNote);
   $('noteInput').addEventListener('keydown', e => { if(e.key === 'Enter') addNote(); });
+  $('addNoteColumnToggleBtn').addEventListener('click', () => {
+    const form = $('addNoteColumnForm');
+    const isHidden = form.style.display === 'none' || form.style.display === '';
+    form.style.display = isHidden ? 'flex' : 'none';
+    if(isHidden) $('newNoteColumnName').focus();
+  });
+  $('confirmAddNoteColumnBtn').addEventListener('click', addNoteColumn);
+  $('newNoteColumnName').addEventListener('keydown', e => { if(e.key === 'Enter') addNoteColumn(); });
 
   $('addAgendaBtn').addEventListener('click', addAgenda);
   $('agendaInput').addEventListener('keydown', e => { if(e.key === 'Enter') addAgenda(); });
@@ -1395,9 +1582,90 @@
     const action = el.getAttribute('data-action');
     if(action === 'delete-note') deleteNote(id);
     if(action === 'open-note') openNoteModal(id);
+    if(action === 'delete-note-column') deleteNoteColumn(el.getAttribute('data-col-id'));
+    if(action === 'edit-note-column') editNoteColumn(el.getAttribute('data-col-id'));
+    if(action === 'save-note-column-name') saveNoteColumnName(el.getAttribute('data-col-id'));
+    if(action === 'cancel-note-column-edit') cancelNoteColumnEdit();
+    if(action === 'pick-note-column-color') pickNoteColumnColor(el.getAttribute('data-col-id'), el.getAttribute('data-color'));
     if(action === 'delete-agenda') deleteAgenda(id);
     if(action === 'toggle-agenda-details') toggleAgendaDetails(id);
     if(action === 'create-task-from-agenda') createTaskFromAgenda(id);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && e.target.classList && e.target.classList.contains('col-name-input')){
+      const colId = e.target.id.replace('colNameInput-', '');
+      saveNoteColumnName(colId);
+    }
+  });
+
+  document.addEventListener('change', (e) => {
+    if(e.target.classList && e.target.classList.contains('note-move-select') && e.target.value){
+      setNoteStatus(e.target.getAttribute('data-id'), e.target.value);
+    }
+  });
+
+  // arrastar e soltar: cartões de anotação entre colunas, e colunas para reordenar
+  document.addEventListener('dragstart', e => {
+    const header = e.target.closest('#noteKanbanBoard .kanban-col-header');
+    if(header){
+      const col = header.closest('.kanban-col');
+      e.dataTransfer.setData('application/x-note-column', col.getAttribute('data-col-id'));
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => col.classList.add('col-dragging'), 0);
+      return;
+    }
+    const card = e.target.closest('#noteKanbanBoard .kanban-card');
+    if(!card) return;
+    e.dataTransfer.setData('application/x-note-card', card.dataset.id);
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => card.classList.add('dragging'), 0);
+  });
+  document.addEventListener('dragend', e => {
+    const card = e.target.closest('#noteKanbanBoard .kanban-card');
+    if(card) card.classList.remove('dragging');
+    document.querySelectorAll('#noteKanbanBoard .kanban-col.col-dragging').forEach(c => c.classList.remove('col-dragging'));
+    document.querySelectorAll('#noteKanbanBoard .kanban-col.col-drag-over').forEach(c => c.classList.remove('col-drag-over'));
+  });
+  document.addEventListener('dragover', e => {
+    const isNoteColumnDrag = e.dataTransfer.types.includes('application/x-note-column');
+    const isNoteCardDrag = e.dataTransfer.types.includes('application/x-note-card');
+    if(!isNoteColumnDrag && !isNoteCardDrag) return;
+    if(isNoteColumnDrag){
+      const col = e.target.closest('#noteKanbanBoard .kanban-col');
+      if(col){ e.preventDefault(); col.classList.add('col-drag-over'); }
+      return;
+    }
+    const colBody = e.target.closest('#noteKanbanBoard .kanban-col-body');
+    if(colBody){ e.preventDefault(); colBody.classList.add('drag-over'); }
+  });
+  document.addEventListener('dragleave', e => {
+    const col = e.target.closest('#noteKanbanBoard .kanban-col');
+    if(col) col.classList.remove('col-drag-over');
+    const colBody = e.target.closest('#noteKanbanBoard .kanban-col-body');
+    if(colBody) colBody.classList.remove('drag-over');
+  });
+  document.addEventListener('drop', e => {
+    const isNoteColumnDrag = e.dataTransfer.types.includes('application/x-note-column');
+    const isNoteCardDrag = e.dataTransfer.types.includes('application/x-note-card');
+    if(!isNoteColumnDrag && !isNoteCardDrag) return;
+    if(isNoteColumnDrag){
+      const col = e.target.closest('#noteKanbanBoard .kanban-col');
+      if(!col) return;
+      e.preventDefault();
+      col.classList.remove('col-drag-over');
+      const draggedColId = e.dataTransfer.getData('application/x-note-column');
+      const targetColId = col.getAttribute('data-col-id');
+      reorderNoteColumn(draggedColId, targetColId);
+      return;
+    }
+    const colBody = e.target.closest('#noteKanbanBoard .kanban-col-body');
+    if(!colBody) return;
+    e.preventDefault();
+    colBody.classList.remove('drag-over');
+    const noteId = e.dataTransfer.getData('application/x-note-card');
+    const status = colBody.getAttribute('data-note-status');
+    if(noteId && status) setNoteStatus(noteId, status);
   });
 
   // blink animation
