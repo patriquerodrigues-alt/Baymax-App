@@ -646,9 +646,10 @@
     <p class="card-sub">Crie pelo título e arraste os cartões entre as colunas pra organizar do seu jeito</p>
     <div class="add-row">
       <input type="text" id="noteInput" placeholder="Título da anotação..." maxlength="80">
-      <select id="notePriority" title="Prioridade">
+      <select id="notePriority" title="Prioridade (opcional)">
+        <option value="" selected>Sem prioridade</option>
         <option value="low">Baixa</option>
-        <option value="med" selected>Média</option>
+        <option value="med">Média</option>
         <option value="high">Alta</option>
       </select>
       <button class="icon-btn" id="addNoteBtn" title="Adicionar anotação">+</button>
@@ -706,6 +707,7 @@
       <div class="modal-row">
         <label class="modal-label">Prioridade</label>
         <select id="noteModalPriority">
+          <option value="">Sem prioridade</option>
           <option value="low">Baixa</option>
           <option value="med">Média</option>
           <option value="high">Alta</option>
@@ -801,7 +803,7 @@
           if(t.doneDate === undefined) t.doneDate = t.status === 'done' ? (t.created || Date.now()) : null;
         });
         state.notes.forEach(n => {
-          if(n.priority === undefined) n.priority = 'med';
+          if(n.priority === undefined) n.priority = null;
           if(n.edited === undefined) n.edited = false;
           if(n.title === undefined){ n.title = n.text || '(sem título)'; n.text = ''; }
           if(n.status === undefined) n.status = 'ideas';
@@ -865,7 +867,7 @@
     const input = $('noteInput');
     const title = input.value.trim();
     if(!title) return;
-    const priority = $('notePriority').value;
+    const priority = $('notePriority').value || null;
     const firstCol = (state.noteColumns[0] || DEFAULT_NOTE_COLUMNS[0]).id;
     state.notes.unshift({ id: uid(), title, text: '', priority, status: firstCol, created: Date.now(), edited: false });
     input.value = '';
@@ -891,7 +893,7 @@
     modalNoteId = id;
     $('noteModalTitle').value = n.title || '';
     $('noteModalText').value = n.text || '';
-    $('noteModalPriority').value = n.priority;
+    $('noteModalPriority').value = n.priority || '';
     $('noteModalOverlay').classList.add('open');
     setTimeout(() => $('noteModalTitle').focus(), 50);
   }
@@ -907,7 +909,7 @@
     if(!titleVal) return;
     n.title = titleVal;
     n.text = $('noteModalText').value.trim();
-    n.priority = $('noteModalPriority').value;
+    n.priority = $('noteModalPriority').value || null;
     n.edited = true;
     saveData();
     closeNoteModal();
@@ -931,7 +933,7 @@
         </div>
         ${n.text ? `<div class="task-desc" data-action="open-note" data-id="${n.id}" style="cursor:pointer;">${escapeHtml(n.text.length > 90 ? n.text.slice(0,90) + '…' : n.text)}</div>` : ''}
         <div class="task-meta">
-          <span class="badge ${n.priority}">${NOTE_PRIORITY_LABEL[n.priority]}</span>
+          ${n.priority ? `<span class="badge ${n.priority}">${NOTE_PRIORITY_LABEL[n.priority]}</span>` : ''}
         </div>
         <div class="note-card-date">${dateLabel}${n.edited ? ' · editado' : ''}</div>
         <div class="kanban-move-row">
