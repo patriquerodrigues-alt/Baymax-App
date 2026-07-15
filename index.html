@@ -424,8 +424,9 @@
   .note-item{
     background: #FDFBF7; border: 1px solid var(--slate-soft); border-left: 4px solid var(--slate-soft);
     border-radius: var(--radius-sm); padding: 10px 34px 10px 12px; margin-bottom: 10px;
-    font-size: 13.5px; font-weight: 600; position: relative; word-break: break-word;
+    font-size: 13.5px; font-weight: 600; position: relative; word-break: break-word; cursor: pointer;
   }
+  .note-text{ font-weight: 700; font-size: 14px; }
   .note-low{ border-left-color: var(--good); background:#F3FAF4; }
   .note-med{ border-left-color: var(--warn); background:#FDF8E8; }
   .note-high{ border-left-color: var(--crit-red); background:#FDF1F1; }
@@ -546,6 +547,36 @@
   .reopen-btn:hover{ background: var(--slate); color:#fff; }
 
   footer{ text-align:center; color: var(--ink-soft); font-size: 12px; font-weight: 700; margin-top: 28px; opacity: 0.65; }
+
+  /* ---------- NOTE MODAL ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(23,20,18,0.5); z-index:1000;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    background:#fff; border-radius: var(--radius-lg); box-shadow: var(--shadow); padding:22px;
+    width:100%; max-width:420px; max-height:85vh; overflow-y:auto;
+  }
+  .modal-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .modal-header h3{ font-family:'Baloo 2', sans-serif; font-size:18px; margin:0; color:var(--mirtilo-deep); }
+  .modal-close-btn{ border:none; background:var(--slate-soft); color:var(--ink-soft); width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:14px; flex-shrink:0; transition:background 0.15s, color 0.15s; }
+  .modal-close-btn:hover{ background:var(--slate); color:#fff; }
+  .modal-title-input{
+    width:100%; font-family:'Baloo 2', sans-serif; font-size:16px; font-weight:700; color:var(--ink);
+    padding:10px 12px; border:2px solid var(--slate-soft); border-radius:var(--radius-sm); outline:none;
+    transition:border-color 0.2s; margin-bottom:10px;
+  }
+  .modal-title-input:focus{ border-color:var(--mirtilo); box-shadow:0 0 0 4px var(--ring); }
+  #noteModalText{
+    width:100%; min-height:140px; resize:vertical; font-family:'Nunito',sans-serif; font-size:14px;
+    padding:12px; border:2px solid var(--slate-soft); border-radius:var(--radius-sm); outline:none; transition:border-color 0.2s;
+  }
+  #noteModalText:focus{ border-color:var(--mirtilo); box-shadow:0 0 0 4px var(--ring); }
+  .modal-row{ display:flex; align-items:center; gap:10px; margin-top:12px; }
+  .modal-label{ font-size:12.5px; font-weight:800; color:var(--ink-soft); }
+  .modal-actions{ display:flex; justify-content:space-between; gap:10px; margin-top:16px; }
+
 </style>
 </head>
 <body>
@@ -579,7 +610,7 @@
       <span class="mood-chip" id="moodChip"></span>
       <br>
       <button class="legend-toggle" id="legendToggle">Como funcionam as emoções do Baymax? <span class="arrow">▾</span></button>
-      <button class="notif-toggle" id="notifToggleBtn">🔕 Ativar lembretes</button>
+      <a class="nav-link-btn" href="./kanban.html">📋 Kanban</a>
       <a class="nav-link-btn" href="./agentes.html">🤖 Central de Agentes</a>
       <div class="legend-panel" id="legendPanel"></div>
     </div>
@@ -587,70 +618,15 @@
 
   <div class="summary-strip" id="summaryStrip"></div>
 
-  <section class="card">
-    <h2>
-      <svg class="card-icon" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#1CA9C9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="4" width="18" height="16" rx="4" stroke="#1CA9C9" stroke-width="2.2"/></svg>
-      Tarefas — Kanban
-    </h2>
-    <p class="card-sub">Arraste os cartões entre as colunas, ou use os botões de cada tarefa</p>
-
-    <button class="new-task-toggle" id="newTaskToggleBtn">+ Nova tarefa</button>
-    <div class="task-add-form" id="taskAddForm" style="display:none;">
-      <div class="task-add-row">
-        <input type="text" id="taskInput" placeholder="Nova tarefa..." maxlength="140">
-        <select id="taskComplexity" title="Complexidade">
-          <option value="simples">Simples</option>
-          <option value="moderada" selected>Moderada</option>
-          <option value="complexa">Complexa</option>
-          <option value="muitocomplexa">Muito complexa</option>
-        </select>
-      </div>
-      <div class="task-add-row">
-        <input type="text" id="taskDescInput" placeholder="Descrição (opcional)" maxlength="300">
-        <div class="maxtime-group">
-          <input type="number" id="taskMaxTimeValue" placeholder="Tempo" min="1">
-          <select id="taskMaxTimeUnit" title="Unidade">
-            <option value="min">min</option>
-            <option value="h">h</option>
-            <option value="dias">dias</option>
-          </select>
-        </div>
-      </div>
-      <div class="task-add-row">
-        <input type="date" id="taskDate" title="Data da tarefa">
-        <input type="time" id="taskTime" title="Horário específico (opcional)">
-      </div>
-      <div class="task-add-row">
-        <label class="recurring-check-row"><input type="checkbox" id="taskRecurring"> Repetir todos os dias</label>
-        <button class="icon-btn" id="addTaskBtn" title="Adicionar tarefa">+</button>
-      </div>
-    </div>
-    <div class="recurring-manager" id="recurringManager"></div>
-    <div class="sort-row">
-      <span class="sort-label">Ordenar por</span>
-      <button class="tab-btn active" id="sortComplexityBtn" data-sort="complexity">Criticidade</button>
-      <button class="tab-btn" id="sortTimeBtn" data-sort="time">Horário</button>
-    </div>
-
-    <div class="kanban-board" id="kanbanBoard"></div>
-    <div class="kanban-add-col-row">
-      <button class="tab-btn" id="addColumnToggleBtn">+ Nova etapa</button>
-      <div id="addColumnForm">
-        <input type="text" id="newColumnName" placeholder="Nome da nova etapa (ex: Revisão)" maxlength="30">
-        <button class="icon-btn" id="confirmAddColumnBtn" title="Adicionar etapa">+</button>
-      </div>
-    </div>
-  </section>
-
   <div class="side-grid">
     <section class="card">
       <h2>
         <svg class="card-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4h16v16H4z" stroke="#1CA9C9" stroke-width="2.2"/><path d="M8 9h8M8 13h8M8 17h4" stroke="#1CA9C9" stroke-width="2" stroke-linecap="round"/></svg>
         Anotações
       </h2>
-      <p class="card-sub">Ideias e lembretes, coloridos pela prioridade</p>
+      <p class="card-sub">Crie pelo título — a descrição completa você adiciona ao abrir a anotação</p>
       <div class="add-row">
-        <input type="text" id="noteInput" placeholder="Escreva uma ideia..." maxlength="300">
+        <input type="text" id="noteInput" placeholder="Título da anotação..." maxlength="80">
         <select id="notePriority" title="Prioridade">
           <option value="low">Baixa</option>
           <option value="med" selected>Média</option>
@@ -694,23 +670,28 @@
     </section>
   </div>
 
-  <section class="card">
-    <button class="history-toggle" id="historyToggleBtn">📜 Ver histórico completo de conclusões <span class="arrow">▾</span></button>
-    <div class="history-body" id="historyBody">
-      <p class="card-sub" style="margin-top:14px;">Busque qualquer tarefa concluída, filtrando por período ou data</p>
-      <div class="completed-filter-row">
-        <select id="completedFilter" title="Filtrar por período">
-          <option value="all">Todas</option>
-          <option value="today">Hoje</option>
-          <option value="week">Últimos 7 dias</option>
-          <option value="month">Este mês</option>
-        </select>
-        <input type="date" id="completedDateFilter" title="Filtrar por uma data específica">
-        <button class="clear-date-btn" id="clearDateFilterBtn" title="Limpar data específica">✕</button>
+  <div class="modal-overlay" id="noteModalOverlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Anotação</h3>
+        <button class="modal-close-btn" id="noteModalCloseBtn">✕</button>
       </div>
-      <ul class="list" id="completedList" style="max-height:340px;"></ul>
+      <input type="text" id="noteModalTitle" maxlength="80" placeholder="Título" class="modal-title-input">
+      <textarea id="noteModalText" maxlength="2000" placeholder="Descrição completa (opcional)..."></textarea>
+      <div class="modal-row">
+        <label class="modal-label">Prioridade</label>
+        <select id="noteModalPriority">
+          <option value="low">Baixa</option>
+          <option value="med">Média</option>
+          <option value="high">Alta</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="mini-btn cancel" id="noteModalDeleteBtn">Excluir</button>
+        <button class="mini-btn save" id="noteModalSaveBtn">Salvar</button>
+      </div>
     </div>
-  </section>
+  </div>
 
   <footer>Baymax está aqui para ajudar com o seu trabalho, um passo de cada vez.</footer>
 </div>
@@ -719,6 +700,7 @@
 
 <script>
 (function(){
+
   const STORAGE_KEY = 'baymax-data';
   let state = { tasks: [], notes: [], agenda: [], recurring: [], kanbanColumns: null };
   const DEFAULT_KANBAN_COLUMNS = [
@@ -726,17 +708,17 @@
     { id: 'inprogress', label: 'Em Andamento', dot: 'yellow' },
     { id: 'done', label: 'Concluído', dot: 'green' }
   ];
+
   let loaded = false;
+
   let editingNoteId = null;
-  let editingTaskId = null;
-  let editingSubtask = null;
-  let expandedChecklists = new Set();
+
   let expandedAgendaDetails = new Set();
+
   let agendaFilterDate = null;
+
   let lastKnownDate = null;
-  let taskSortMode = 'complexity';
-  let notificationsEnabled = false;
-  let notifiedTasks = new Set();
+
 
   const $ = (id) => document.getElementById(id);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -746,9 +728,11 @@
   };
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+
   const COMPLEXITY_WEIGHT = { simples: 1, moderada: 2, complexa: 3, muitocomplexa: 4 };
-  const COMPLEXITY_LABEL = { simples: 'Simples', moderada: 'Moderada', complexa: 'Complexa', muitocomplexa: 'Muito complexa' };
+
   const MOOD_NAME = { resting:'Hibernando 💤', content:'Tranquilão 😌', neutral:'Modo Padrão ⚙️', focused:'Foco Total 🎯', overwhelmed:'Alerta de Fofura Estressada 😵', happy:'Missão Cumprida 🎉' };
+
   const MOOD_STYLE = {
     resting:     { bg:'#EDF1F3', fg:'#5C7480' },
     content:     { bg:'#EAF6EC', fg:'#3F7A4C' },
@@ -757,6 +741,7 @@
     overwhelmed: { bg:'#EAE7F3', fg:'#362C5C' },
     happy:       { bg:'#E7F7EA', fg:'#3F9450' }
   };
+
   const MOOD_FACE = {
     resting:     { eye:{rx:8, ry:2},  mouth:'M 48 84 L 72 84', brow:false, browL:'', browR:'', blush:false, sweat:false, zzz:true,  sparkle:false },
     content:     { eye:{rx:8, ry:5},  mouth:'M 45 78 Q 60 90 75 78', brow:false, browL:'', browR:'', blush:true,  sweat:false, zzz:false, sparkle:false },
@@ -766,32 +751,6 @@
     happy:       { eye:{rx:8, ry:6},  mouth:'M 44 79 Q 60 95 76 79', brow:false, browL:'', browR:'', blush:true,  sweat:false, zzz:false, sparkle:true }
   };
 
-  function formatMaxTime(mt){
-    if(!mt || !mt.value) return '';
-    if(mt.unit === 'h') return `${mt.value} h`;
-    if(mt.unit === 'dias') return `${mt.value} ${mt.value == 1 ? 'dia' : 'dias'}`;
-    return `${mt.value} min`;
-  }
-  function maxTimeToMinutes(mt){
-    if(!mt || !mt.value) return null;
-    if(mt.unit === 'h') return mt.value * 60;
-    if(mt.unit === 'dias') return mt.value * 24 * 60;
-    return mt.value;
-  }
-  function addMinutesToTime(timeStr, minutes){
-    const [h, m] = timeStr.split(':').map(Number);
-    const total = (((h * 60 + m + minutes) % 1440) + 1440) % 1440;
-    return `${String(Math.floor(total / 60)).padStart(2,'0')}:${String(total % 60).padStart(2,'0')}`;
-  }
-  function buildGoogleDescription(t){
-    let desc = t.description || '';
-    const subtasks = t.subtasks || [];
-    if(subtasks.length > 0){
-      const checklistText = subtasks.map(s => `${s.done ? '☑' : '☐'} ${s.text}`).join('\n');
-      desc = (desc ? desc + '\n\n' : '') + 'Checklist:\n' + checklistText;
-    }
-    return desc;
-  }
 
   async function loadData(){
     try{
@@ -819,6 +778,7 @@
         state.notes.forEach(n => {
           if(n.priority === undefined) n.priority = 'med';
           if(n.edited === undefined) n.edited = false;
+          if(n.title === undefined){ n.title = n.text || '(sem título)'; n.text = ''; }
         });
         state.recurring.forEach(r => { if(r.time === undefined) r.time = null; });
         if(!state.kanbanColumns || !Array.isArray(state.kanbanColumns) || state.kanbanColumns.length === 0){
@@ -841,9 +801,7 @@
     }
     loaded = true;
     lastKnownDate = todayStr();
-    ensureTodayRecurringInstances();
     renderLegend();
-    renderKanbanSkeleton();
     renderAll();
   }
 
@@ -857,442 +815,15 @@
     }, 250);
   }
 
-  // ---------- RECURRING TASKS ----------
-  function ensureTodayRecurringInstances(){
-    const today = todayStr();
-    let changed = false;
-    state.recurring.filter(r => r.active).forEach(r => {
-      const exists = state.tasks.some(t => t.recurringId === r.id && t.date === today);
-      if(!exists){
-        state.tasks.unshift({
-          id: uid(), text: r.text, description: r.description, complexity: r.complexity,
-          maxTime: r.maxTime, time: r.time || null, status: 'pending', doneDate: null,
-          date: today, recurringId: r.id, created: Date.now(), subtasks: []
-        });
-        changed = true;
-      }
-    });
-    if(changed) saveData();
-  }
-  function renderRecurringManager(){
-    const el = $('recurringManager');
-    const active = state.recurring.filter(r => r.active);
-    if(active.length === 0){ el.innerHTML = ''; return; }
-    el.innerHTML = '<div class="recurring-title">🔁 Recorrentes ativas</div>' + active.map(r => `
-      <span class="recur-chip">${escapeHtml(r.text)}<button data-id="${r.id}" data-action="stop-recurring" title="Parar repetição">✕</button></span>
-    `).join('');
-  }
-  function stopRecurring(id){
-    const r = state.recurring.find(x => x.id === id);
-    if(r){ r.active = false; saveData(); renderAll(); }
-  }
-
-  // ---------- TASKS ----------
-  function addTask(){
-    const input = $('taskInput');
-    const text = input.value.trim();
-    if(!text) return;
-    const description = $('taskDescInput').value.trim();
-    const complexity = $('taskComplexity').value;
-    const timeValue = parseFloat($('taskMaxTimeValue').value);
-    const maxTime = (timeValue && timeValue > 0) ? { value: timeValue, unit: $('taskMaxTimeUnit').value } : null;
-    const scheduledTime = $('taskTime').value || null;
-    const isRecurring = $('taskRecurring').checked;
-    const today = todayStr();
-    const chosenDate = $('taskDate').value || today;
-    const date = isRecurring ? today : (chosenDate < today ? today : chosenDate);
-
-    if(isRecurring){
-      const recId = uid();
-      state.recurring.unshift({ id: recId, text, description, complexity, maxTime, time: scheduledTime, active: true, created: Date.now() });
-      state.tasks.unshift({ id: uid(), text, description, complexity, maxTime, time: scheduledTime, status: 'pending', doneDate: null, date: today, recurringId: recId, created: Date.now(), subtasks: [] });
-    } else {
-      state.tasks.unshift({ id: uid(), text, description, complexity, maxTime, time: scheduledTime, status: 'pending', doneDate: null, date, recurringId: null, created: Date.now(), subtasks: [] });
-    }
-
-    input.value = '';
-    $('taskDescInput').value = '';
-    $('taskMaxTimeValue').value = '';
-    $('taskTime').value = '';
-    $('taskRecurring').checked = false;
-    $('taskDate').value = today;
-    saveData();
-    renderAll();
-  }
-  function setTaskStatus(id, status){
-    const t = state.tasks.find(x => x.id === id);
-    if(!t) return;
-    t.status = status;
-    t.doneDate = status === 'done' ? Date.now() : null;
-    saveData();
-    renderAll();
-  }
-  function deleteTask(id){
-    state.tasks = state.tasks.filter(x => x.id !== id);
-    saveData();
-    renderAll();
-  }
-
-  function taskEditFormHtml(t){
-    const mt = t.maxTime || { value: '', unit: 'min' };
-    return `
-      <div class="task-edit-form">
-        <input type="text" id="editTaskText-${t.id}" value="${escapeHtml(t.text)}" maxlength="140" placeholder="Título">
-        <input type="text" id="editTaskDesc-${t.id}" value="${escapeHtml(t.description || '')}" maxlength="300" placeholder="Descrição (opcional)">
-        <div class="task-edit-row">
-          <select id="editTaskComplexity-${t.id}">
-            <option value="simples" ${t.complexity==='simples'?'selected':''}>Simples</option>
-            <option value="moderada" ${t.complexity==='moderada'?'selected':''}>Moderada</option>
-            <option value="complexa" ${t.complexity==='complexa'?'selected':''}>Complexa</option>
-            <option value="muitocomplexa" ${t.complexity==='muitocomplexa'?'selected':''}>Muito complexa</option>
-          </select>
-          <input type="date" id="editTaskDate-${t.id}" value="${t.date}">
-          <input type="time" id="editTaskTime-${t.id}" value="${t.time || ''}" title="Horário específico">
-        </div>
-        <div class="task-edit-row">
-          <input type="number" id="editTaskMaxTimeValue-${t.id}" min="1" value="${mt.value}" placeholder="Tempo">
-          <select id="editTaskMaxTimeUnit-${t.id}">
-            <option value="min" ${mt.unit==='min'?'selected':''}>min</option>
-            <option value="h" ${mt.unit==='h'?'selected':''}>h</option>
-            <option value="dias" ${mt.unit==='dias'?'selected':''}>dias</option>
-          </select>
-        </div>
-        <div class="task-edit-actions">
-          <button class="mini-btn save" data-id="${t.id}" data-action="save-task">Salvar</button>
-          <button class="mini-btn cancel" data-action="cancel-edit-task">Cancelar</button>
-        </div>
-      </div>
-    `;
-  }
-  function editTask(id){
-    editingTaskId = id;
-    renderKanban();
-    const el = $('editTaskText-' + id);
-    if(el) el.focus();
-  }
-  function cancelEditTask(){
-    editingTaskId = null;
-    renderKanban();
-  }
-  function saveTaskEdit(id){
-    const t = state.tasks.find(x => x.id === id);
-    if(!t) return;
-    const text = $('editTaskText-' + id).value.trim();
-    if(!text) return;
-    t.text = text;
-    t.description = $('editTaskDesc-' + id).value.trim();
-    t.complexity = $('editTaskComplexity-' + id).value;
-    const dateVal = $('editTaskDate-' + id).value;
-    if(dateVal) t.date = dateVal;
-    t.time = $('editTaskTime-' + id).value || null;
-    const tv = parseFloat($('editTaskMaxTimeValue-' + id).value);
-    t.maxTime = (tv && tv > 0) ? { value: tv, unit: $('editTaskMaxTimeUnit-' + id).value } : null;
-    editingTaskId = null;
-    saveData();
-    renderAll();
-  }
-
-  function toggleChecklist(taskId){
-    if(expandedChecklists.has(taskId)) expandedChecklists.delete(taskId);
-    else expandedChecklists.add(taskId);
-    renderKanban();
-  }
-  function addSubtask(taskId){
-    const input = $('subtaskInput-' + taskId);
-    if(!input) return;
-    const text = input.value.trim();
-    if(!text) return;
-    const t = state.tasks.find(x => x.id === taskId);
-    if(!t) return;
-    t.subtasks = t.subtasks || [];
-    t.subtasks.push({ id: uid(), text, description: '', done: false });
-    input.value = '';
-    saveData();
-    renderKanban();
-  }
-  function toggleSubtask(taskId, subId){
-    const t = state.tasks.find(x => x.id === taskId);
-    if(!t) return;
-    const s = (t.subtasks || []).find(x => x.id === subId);
-    if(s){ s.done = !s.done; saveData(); renderKanban(); }
-  }
-  function deleteSubtask(taskId, subId){
-    const t = state.tasks.find(x => x.id === taskId);
-    if(!t) return;
-    t.subtasks = (t.subtasks || []).filter(x => x.id !== subId);
-    saveData();
-    renderKanban();
-  }
-  function editSubtask(taskId, subId){
-    editingSubtask = { taskId, subId };
-    renderKanban();
-    const el = $('subtaskEditText-' + taskId + '-' + subId);
-    if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
-  }
-  function cancelEditSubtask(){
-    editingSubtask = null;
-    renderKanban();
-  }
-  function saveSubtaskEdit(taskId, subId){
-    const t = state.tasks.find(x => x.id === taskId);
-    if(!t) return;
-    const s = (t.subtasks || []).find(x => x.id === subId);
-    if(!s) return;
-    const textEl = $('subtaskEditText-' + taskId + '-' + subId);
-    const descEl = $('subtaskEditDesc-' + taskId + '-' + subId);
-    if(!textEl) return;
-    const val = textEl.value.trim();
-    if(!val) return;
-    s.text = val;
-    s.description = descEl ? descEl.value.trim() : '';
-    editingSubtask = null;
-    saveData();
-    renderKanban();
-  }
-
-  function sortTaskList(list){
-    if(taskSortMode === 'time'){
-      return [...list].sort((a,b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
-    }
-    return [...list].sort((a,b) => COMPLEXITY_WEIGHT[b.complexity] - COMPLEXITY_WEIGHT[a.complexity]);
-  }
-
-  function groupTasksByDay(tasks){
-    const today = todayStr();
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0,10);
-    const map = {};
-    tasks.forEach(t => { (map[t.date] = map[t.date] || []).push(t); });
-    const dates = Object.keys(map);
-    const overdueTasks = [];
-    dates.forEach(d => { if(d < today) overdueTasks.push(...map[d]); });
-    const groups = [];
-    if(overdueTasks.length) groups.push({ label: '⚠️ Atrasadas', tasks: sortTaskList(overdueTasks), overdue: true });
-    dates.filter(d => d >= today).sort().forEach(d => {
-      let label;
-      if(d === today) label = 'Hoje';
-      else if(d === tomorrow) label = 'Amanhã';
-      else label = formatDateLabel(d);
-      groups.push({ label, tasks: sortTaskList(map[d]), overdue: false });
-    });
-    return groups;
-  }
-  function formatDateLabel(dateStr){
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' });
-  }
-
-  function kanbanCardHtml(t, status){
-    return editingTaskId === t.id ? taskEditFormHtml(t) : kanbanCardViewHtml(t, status);
-  }
-  function subtaskItemHtml(taskId, s){
-    const isEditing = editingSubtask && editingSubtask.taskId === taskId && editingSubtask.subId === s.id;
-    if(isEditing){
-      return `
-        <div class="subtask-editing">
-          <input type="text" id="subtaskEditText-${taskId}-${s.id}" value="${escapeHtml(s.text)}" maxlength="120" placeholder="Item da checklist">
-          <input type="text" id="subtaskEditDesc-${taskId}-${s.id}" value="${escapeHtml(s.description || '')}" maxlength="200" placeholder="Descrição (opcional)">
-          <div class="subtask-edit-actions">
-            <button class="mini-btn save" data-task-id="${taskId}" data-sub-id="${s.id}" data-action="save-subtask">Salvar</button>
-            <button class="mini-btn cancel" data-action="cancel-edit-subtask">Cancelar</button>
-          </div>
-        </div>
-      `;
-    }
-    return `
-      <div class="subtask-item">
-        <div class="subtask-checkbox ${s.done ? 'checked' : ''}" data-action="toggle-subtask" data-task-id="${taskId}" data-sub-id="${s.id}">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="subtask-main">
-          <div class="subtask-text ${s.done ? 'done' : ''}">${escapeHtml(s.text)}</div>
-          ${s.description ? `<div class="subtask-desc">${escapeHtml(s.description)}</div>` : ''}
-        </div>
-        <div class="subtask-actions">
-          <button class="subtask-icon-btn" data-action="edit-subtask" data-task-id="${taskId}" data-sub-id="${s.id}" title="Editar item">✎</button>
-          <button class="subtask-icon-btn" data-action="delete-subtask" data-task-id="${taskId}" data-sub-id="${s.id}" title="Excluir item">✕</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function kanbanCardViewHtml(t, status){
-    const today = todayStr();
-    const overdue = status !== 'done' && t.date < today;
-    const isOpen = expandedChecklists.has(t.id);
-    const subtasks = t.subtasks || [];
-    const doneCount = subtasks.filter(s => s.done).length;
-    const otherCols = state.kanbanColumns.filter(c => c.id !== status);
-    return `
-      <div class="kanban-card" draggable="true" data-id="${t.id}">
-        <div class="kanban-card-top">
-          <div class="checkbox ${status==='done' ? 'checked' : ''}" data-id="${t.id}" data-action="toggle-done">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="kanban-card-text ${status==='done' ? 'done' : ''}">${escapeHtml(t.text)}${t.recurringId ? '<span class="recur-badge" title="Tarefa recorrente">🔁</span>' : ''}${t.googleEventId ? '<span class="google-tag" title="Sincronizada com o Google Agenda">G</span>' : ''}</div>
-          <div class="kanban-card-actions">
-            <button class="kanban-mini-btn" data-id="${t.id}" data-action="edit-task" title="Editar">✎</button>
-            <button class="kanban-mini-btn" data-id="${t.id}" data-action="delete-task" title="Excluir">✕</button>
-          </div>
-        </div>
-        ${t.description ? `<div class="task-desc">${escapeHtml(t.description)}</div>` : ''}
-        <div class="task-meta">
-          <span class="badge ${t.complexity}">${COMPLEXITY_LABEL[t.complexity]}</span>
-          ${t.time ? `<span class="badge scheduled">🕒 ${t.time}${maxTimeToMinutes(t.maxTime) ? '–' + addMinutesToTime(t.time, maxTimeToMinutes(t.maxTime)) : ''}</span>` : ''}
-          ${t.maxTime ? `<span class="badge time">⏱ ${formatMaxTime(t.maxTime)}</span>` : ''}
-          ${overdue ? '<span class="badge overdue">Atrasada</span>' : ''}
-        </div>
-        <div class="checklist-wrap">
-          <button class="checklist-toggle" data-action="toggle-checklist" data-task-id="${t.id}">
-            <span class="checklist-toggle-icon">${isOpen ? '▾' : '▸'}</span> Checklist${subtasks.length ? ` (${doneCount}/${subtasks.length})` : ''}
-          </button>
-          <div class="checklist-body" style="display:${isOpen ? 'block' : 'none'};">
-            ${subtasks.length > 0 ? `
-            <div class="subtask-list">${subtasks.map(s => subtaskItemHtml(t.id, s)).join('')}</div>
-            <div class="subtask-progress">${doneCount}/${subtasks.length} concluídos</div>` : ''}
-            <div class="subtask-add-row">
-              <input type="text" class="subtask-input" id="subtaskInput-${t.id}" placeholder="Adicionar item..." maxlength="120">
-              <button class="icon-btn" data-action="add-subtask" data-task-id="${t.id}" title="Adicionar item">+</button>
-            </div>
-          </div>
-        </div>
-        <div class="kanban-move-row">
-          <select class="move-select" data-task-id="${t.id}">
-            <option value="">Mover para...</option>
-            ${otherCols.map(c => `<option value="${c.id}">${escapeHtml(c.label)}</option>`).join('')}
-          </select>
-          <button class="kanban-move-btn" data-id="${t.id}" data-action="send-google" title="Enviar esta tarefa ao Google Agenda">📤 Agenda</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderDayGroupedColumn(tasks, status){
-    if(tasks.length === 0) return '<div class="kanban-empty">Nenhuma tarefa aqui.<br>Arraste um cartão ou crie uma nova.</div>';
-    const groups = groupTasksByDay(tasks);
-    return groups.map((g, i) => `
-      <div class="kanban-day-header${i===0 ? ' first' : ''}${g.overdue ? ' overdue-label' : ''}">${g.label}</div>
-      ${g.tasks.map(t => kanbanCardHtml(t, status)).join('')}
-    `).join('');
-  }
-  function renderDoneColumn(tasks){
-    if(tasks.length === 0) return '<div class="kanban-empty">Nada concluído ainda.<br>Você consegue! 💪</div>';
-    const sorted = [...tasks].sort((a,b) => (b.doneDate || 0) - (a.doneDate || 0));
-    const shown = sorted.slice(0, 15);
-    return shown.map(t => kanbanCardHtml(t, 'done')).join('') +
-      (sorted.length > 15 ? `<div class="kanban-more-note">+ ${sorted.length - 15} mais no histórico completo abaixo ⬇</div>` : '');
-  }
-
-  function renderKanbanSkeleton(){
-    const board = $('kanbanBoard');
-    board.innerHTML = state.kanbanColumns.map(c => `
-      <div class="kanban-col" data-col-id="${c.id}">
-        <div class="kanban-col-header" draggable="true" title="Arraste para reordenar as etapas">
-          <span class="kanban-drag-handle">⠿</span>
-          <span class="kanban-dot ${c.dot}"></span>${escapeHtml(c.label)}
-          <span class="kanban-count" id="count-${c.id}">0</span>
-          ${(c.id !== 'pending' && c.id !== 'inprogress' && c.id !== 'done') ? `<button class="kanban-col-del" data-col-id="${c.id}" data-action="delete-column" title="Remover etapa">✕</button>` : ''}
-        </div>
-        <div class="kanban-col-body" data-status="${c.id}" id="colBody-${c.id}"></div>
-      </div>
-    `).join('');
-  }
-
-  function renderKanban(){
-    const cols = {};
-    state.kanbanColumns.forEach(c => { cols[c.id] = []; });
-    state.tasks.forEach(t => { (cols[t.status] = cols[t.status] || []).push(t); });
-    state.kanbanColumns.forEach(c => {
-      const countEl = $('count-' + c.id);
-      const bodyEl = $('colBody-' + c.id);
-      if(!countEl || !bodyEl) return;
-      const list = cols[c.id] || [];
-      countEl.textContent = list.length;
-      bodyEl.innerHTML = c.id === 'done' ? renderDoneColumn(list) : renderDayGroupedColumn(list, c.id);
-    });
-  }
-
-  function addColumn(){
-    const input = $('newColumnName');
-    const label = input.value.trim();
-    if(!label) return;
-    const dots = ['purple', 'teal', 'orange'];
-    const customCount = state.kanbanColumns.filter(c => !['pending','inprogress','done'].includes(c.id)).length;
-    const newCol = { id: 'col_' + uid(), label, dot: dots[customCount % dots.length] };
-    const doneIndex = state.kanbanColumns.findIndex(c => c.id === 'done');
-    state.kanbanColumns.splice(doneIndex >= 0 ? doneIndex : state.kanbanColumns.length, 0, newCol);
-    input.value = '';
-    $('addColumnForm').style.display = 'none';
-    saveData();
-    renderKanbanSkeleton();
-    renderKanban();
-  }
-  function deleteColumn(colId){
-    if(!confirm('Remover esta etapa? As tarefas nela voltarão para "Pendente".')) return;
-    state.tasks.forEach(t => { if(t.status === colId) t.status = 'pending'; });
-    state.kanbanColumns = state.kanbanColumns.filter(c => c.id !== colId);
-    saveData();
-    renderKanbanSkeleton();
-    renderAll();
-  }
-
-  // ---------- COMPLETED HISTORY ----------
-  function getFilteredCompleted(){
-    const completed = state.tasks.filter(t => t.status === 'done' && t.doneDate);
-    const specificDate = $('completedDateFilter').value;
-    if(specificDate){
-      return completed.filter(t => new Date(t.doneDate).toISOString().slice(0,10) === specificDate)
-        .sort((a,b) => b.doneDate - a.doneDate);
-    }
-    const quick = $('completedFilter').value;
-    const now = new Date();
-    let filtered = completed;
-    if(quick === 'today'){
-      const todayKey = now.toISOString().slice(0,10);
-      filtered = completed.filter(t => new Date(t.doneDate).toISOString().slice(0,10) === todayKey);
-    } else if(quick === 'week'){
-      const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-      filtered = completed.filter(t => t.doneDate >= weekAgo);
-    } else if(quick === 'month'){
-      filtered = completed.filter(t => {
-        const d = new Date(t.doneDate);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      });
-    }
-    return filtered.sort((a,b) => b.doneDate - a.doneDate);
-  }
-  function renderCompleted(){
-    const list = $('completedList');
-    const items = getFilteredCompleted();
-    if(items.length === 0){
-      list.innerHTML = '<div class="empty-state">Nenhuma tarefa concluída neste período.</div>';
-      return;
-    }
-    list.innerHTML = items.map(t => `
-      <li class="completed-item">
-        <div class="completed-check">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="completed-main">
-          <div class="completed-text">${escapeHtml(t.text)}${t.recurringId ? '<span class="recur-badge" title="Tarefa recorrente">🔁</span>' : ''}</div>
-          ${t.description ? `<div class="task-desc">${escapeHtml(t.description)}</div>` : ''}
-          <div class="task-meta">
-            <span class="badge ${t.complexity}">${COMPLEXITY_LABEL[t.complexity]}</span>
-            ${t.maxTime ? `<span class="badge time">⏱ ${formatMaxTime(t.maxTime)}</span>` : ''}
-          </div>
-          <div class="completed-date">Concluída em ${new Date(t.doneDate).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
-        </div>
-        <button class="reopen-btn" data-id="${t.id}" data-action="reopen-task" title="Voltar para pendentes">Reabrir</button>
-      </li>
-    `).join('');
-  }
 
   // ---------- NOTES ----------
+  let modalNoteId = null;
   function addNote(){
     const input = $('noteInput');
-    const text = input.value.trim();
-    if(!text) return;
+    const title = input.value.trim();
+    if(!title) return;
     const priority = $('notePriority').value;
-    state.notes.unshift({ id: uid(), text, priority, created: Date.now(), edited: false });
+    state.notes.unshift({ id: uid(), title, text: '', priority, created: Date.now(), edited: false });
     input.value = '';
     saveData();
     renderAll();
@@ -1301,27 +832,39 @@
     state.notes = state.notes.filter(x => x.id !== id);
     saveData();
     renderAll();
+    if(modalNoteId === id) closeNoteModal();
   }
-  function editNote(id){
-    editingNoteId = id;
-    renderNotes();
-    const ta = $('editInput-' + id);
-    if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
-  }
-  function cancelEditNote(){ editingNoteId = null; renderNotes(); }
-  function saveNoteEdit(id){
+  function openNoteModal(id){
     const n = state.notes.find(x => x.id === id);
-    const ta = $('editInput-' + id);
-    const sel = $('editPriority-' + id);
-    if(!n || !ta) return;
-    const val = ta.value.trim();
-    if(!val) return;
-    n.text = val;
-    n.priority = sel.value;
+    if(!n) return;
+    modalNoteId = id;
+    $('noteModalTitle').value = n.title || '';
+    $('noteModalText').value = n.text || '';
+    $('noteModalPriority').value = n.priority;
+    $('noteModalOverlay').classList.add('open');
+    setTimeout(() => $('noteModalTitle').focus(), 50);
+  }
+  function closeNoteModal(){
+    modalNoteId = null;
+    $('noteModalOverlay').classList.remove('open');
+  }
+  function saveNoteModal(){
+    if(!modalNoteId) return;
+    const n = state.notes.find(x => x.id === modalNoteId);
+    if(!n) return;
+    const titleVal = $('noteModalTitle').value.trim();
+    if(!titleVal) return;
+    n.title = titleVal;
+    n.text = $('noteModalText').value.trim();
+    n.priority = $('noteModalPriority').value;
     n.edited = true;
-    editingNoteId = null;
     saveData();
-    renderAll();
+    closeNoteModal();
+    renderNotes();
+  }
+  function deleteNoteModal(){
+    if(!modalNoteId) return;
+    deleteNote(modalNoteId);
   }
   function renderNotes(){
     const list = $('noteList');
@@ -1331,29 +874,13 @@
     }
     list.innerHTML = state.notes.map(n => {
       const dateLabel = new Date(n.created).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-      if(editingNoteId === n.id){
-        return `
-          <li class="note-item note-editing note-${n.priority}">
-            <textarea class="note-edit-input" id="editInput-${n.id}" maxlength="300">${escapeHtml(n.text)}</textarea>
-            <div class="note-edit-row">
-              <select id="editPriority-${n.id}">
-                <option value="low" ${n.priority==='low'?'selected':''}>Baixa</option>
-                <option value="med" ${n.priority==='med'?'selected':''}>Média</option>
-                <option value="high" ${n.priority==='high'?'selected':''}>Alta</option>
-              </select>
-              <button class="mini-btn save" data-id="${n.id}" data-action="save-note">Salvar</button>
-              <button class="mini-btn cancel" data-action="cancel-edit-note">Cancelar</button>
-            </div>
-          </li>
-        `;
-      }
       return `
-        <li class="note-item note-${n.priority}">
+        <li class="note-item note-${n.priority}" data-action="open-note" data-id="${n.id}">
           <div class="note-actions">
-            <button class="mini-icon-btn" data-id="${n.id}" data-action="edit-note" title="Editar">✎</button>
             <button class="mini-icon-btn" data-id="${n.id}" data-action="delete-note" title="Excluir">✕</button>
           </div>
-          <div class="note-text">${escapeHtml(n.text)}</div>
+          <div class="note-text">${escapeHtml(n.title)}</div>
+          ${n.text ? `<div class="task-desc">${escapeHtml(n.text.length > 90 ? n.text.slice(0,90) + '…' : n.text)}</div>` : ''}
           <span class="note-date">${dateLabel}${n.edited ? ' · editado' : ''}</span>
         </li>
       `;
@@ -1481,6 +1008,18 @@
     });
     ics += 'END:VCALENDAR\r\n';
     downloadFile(`baymax-agenda-${agendaFilterDate}.ics`, ics, 'text/calendar');
+  }
+
+
+  function getNextAgendaItem(){
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const todays = state.agenda.filter(a => (a.date || todayStr()) === todayStr());
+    const sorted = [...todays].sort((a,b) => a.time.localeCompare(b.time));
+    return sorted.find(a => {
+      const [h,m] = a.time.split(':').map(Number);
+      return (h*60+m) >= nowMinutes;
+    }) || null;
   }
 
   // ---------- GOOGLE CALENDAR ----------
@@ -1643,49 +1182,7 @@
       if(refreshBtn) refreshBtn.classList.remove('spinning');
     }
   }
-  async function sendTaskToGoogleCalendar(taskId){
-    if(!googleAccessToken){
-      alert('Conecte-se ao Google Agenda primeiro (botão no card de Agenda).');
-      return;
-    }
-    const t = state.tasks.find(x => x.id === taskId);
-    if(!t) return;
-    const date = t.date || todayStr();
-    const time = t.time || '09:00';
-    const durationMinutes = maxTimeToMinutes(t.maxTime) || 30;
-    const [h, m] = time.split(':').map(Number);
-    const startDate = new Date(`${date}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`);
-    const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
-    try{
-      const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          summary: t.text,
-          description: buildGoogleDescription(t),
-          start: { dateTime: startDate.toISOString() },
-          end: { dateTime: endDate.toISOString() }
-        })
-      });
-      if(!res.ok){
-        const errText = await res.text().catch(() => '');
-        throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 200));
-      }
-      const data = await res.json();
-      t.googleEventId = data.id;
-      const alreadyLinked = state.agenda.some(a => a.linkedTaskId === t.id);
-      if(!alreadyLinked){
-        state.agenda.push({ id: uid(), text: t.text, time, date, fromGoogle: false, linkedTaskId: t.id, emails: [], links: [] });
-      }
-      saveData();
-      renderAgenda();
-      showToast({ text: `Tarefa enviada! Bloqueado ${formatMaxTime(t.maxTime) || '30 min'} na sua agenda.` });
-      renderKanban();
-    }catch(e){
-      console.error(e);
-      alert('Erro ao enviar para o Google Agenda: ' + e.message);
-    }
-  }
+
   function createTaskFromAgenda(agendaId){
     const a = state.agenda.find(x => x.id === agendaId);
     if(!a) return;
@@ -1702,48 +1199,7 @@
     showToast({ text: 'Tarefa criada a partir do compromisso!' });
   }
 
-  // ---------- NOTIFICATIONS ----------
-  function toggleNotifications(){
-    if(!('Notification' in window)){
-      alert('Seu navegador não suporta notificações do sistema. Os avisos internos (popups na tela) continuam funcionando normalmente.');
-      notificationsEnabled = !notificationsEnabled;
-      updateNotifButton();
-      return;
-    }
-    if(Notification.permission === 'denied'){
-      alert('As notificações estão bloqueadas para este arquivo no navegador. Para ativar: abra as configurações do site/arquivo no seu navegador (ícone de cadeado ou "i" ao lado do endereço) e permita notificações manualmente. Os popups internos continuam funcionando mesmo assim.');
-      return;
-    }
-    if(Notification.permission === 'granted'){
-      notificationsEnabled = !notificationsEnabled;
-      updateNotifButton();
-      if(notificationsEnabled) confirmNotificationsWorking();
-      return;
-    }
-    Notification.requestPermission().then(perm => {
-      notificationsEnabled = (perm === 'granted');
-      updateNotifButton();
-      if(perm === 'granted'){
-        confirmNotificationsWorking();
-      } else if(perm === 'denied'){
-        alert('Notificações bloqueadas. Você pode ativá-las depois nas configurações do navegador para este arquivo. Os popups internos (na tela) continuam avisando normalmente.');
-      }
-    });
-  }
-  function confirmNotificationsWorking(){
-    showToast({ text: 'Lembretes ativados! Você verá avisos como este nos horários marcados.' });
-    try{
-      const n = new Notification('Baymax 🤖', { body: 'Lembretes ativados com sucesso! Vou te avisar nos horários marcados.' });
-      setTimeout(() => n.close && n.close(), 6000);
-    }catch(e){
-      console.error('Notificação do sistema falhou:', e);
-    }
-  }
-  function updateNotifButton(){
-    const btn = $('notifToggleBtn');
-    if(notificationsEnabled){ btn.textContent = '🔔 Lembretes ativos'; btn.classList.add('on'); }
-    else { btn.textContent = '🔕 Ativar lembretes'; btn.classList.remove('on'); }
-  }
+
   function showToast(t){
     const container = $('toastContainer');
     const toast = document.createElement('div');
@@ -1762,21 +1218,6 @@
       toast.style.transform = 'translateX(30px)';
       setTimeout(() => toast.remove(), 400);
     }, 7000);
-  }
-  function checkTaskNotifications(){
-    const now = new Date();
-    const today = todayStr();
-    const nowHHMM = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    state.tasks.filter(t => t.status !== 'done' && t.date === today && t.time).forEach(t => {
-      const key = t.id + '-' + today;
-      if(t.time === nowHHMM && !notifiedTasks.has(key)){
-        notifiedTasks.add(key);
-        showToast(t);
-        if(notificationsEnabled && 'Notification' in window && Notification.permission === 'granted'){
-          try{ new Notification('Baymax 🤖 lembra você', { body: t.text }); }catch(e){}
-        }
-      }
-    });
   }
 
   // ---------- BAYMAX MOOD ----------
@@ -1896,24 +1337,19 @@
     $('avatarWrap').style.setProperty('--mood-color', style.fg);
   }
 
+
   function renderSummary(){
-    const pending = state.tasks.filter(t => t.status !== 'done');
-    const inprogress = state.tasks.filter(t => t.status === 'inprogress').length;
-    const done = state.tasks.filter(t => t.status === 'done').length;
+    const pending = state.tasks.filter(t => t.status !== 'done').length;
     const next = getNextAgendaItem();
     const strip = $('summaryStrip');
     strip.innerHTML = `
-      <div class="summary-pill"><span class="dot red"></span>Pendentes: <b>${pending.length - inprogress}</b></div>
-      <div class="summary-pill"><span class="dot warn"></span>Em andamento: <b>${inprogress}</b></div>
-      <div class="summary-pill"><span class="dot good"></span>Concluídas: <b>${done}</b></div>
-      <div class="summary-pill"><span class="dot slate"></span>Próximo: <b>${next ? (next.time + ' · ' + next.text) : '—'}</b></div>
+      <div class="summary-pill"><span class="dot slate"></span>Anotações: <b>${state.notes.length}</b></div>
+      <div class="summary-pill"><span class="dot red"></span>Tarefas pendentes: <b>${pending}</b></div>
+      <div class="summary-pill"><span class="dot warn"></span>Próximo: <b>${next ? (next.time + ' · ' + next.text) : '—'}</b></div>
     `;
   }
 
   function renderAll(){
-    renderKanban();
-    renderRecurringManager();
-    renderCompleted();
     renderNotes();
     renderAgenda();
     renderSummary();
@@ -1921,17 +1357,6 @@
   }
 
   // ---------- EVENTS ----------
-  $('newTaskToggleBtn').addEventListener('click', () => {
-    const form = $('taskAddForm');
-    const isHidden = form.style.display === 'none';
-    form.style.display = isHidden ? 'flex' : 'none';
-    if(isHidden) $('taskInput').focus();
-  });
-  $('addTaskBtn').addEventListener('click', addTask);
-  $('taskInput').addEventListener('keydown', e => { if(e.key === 'Enter') addTask(); });
-  $('sortComplexityBtn').addEventListener('click', () => { taskSortMode = 'complexity'; $('sortComplexityBtn').classList.add('active'); $('sortTimeBtn').classList.remove('active'); renderKanban(); });
-  $('sortTimeBtn').addEventListener('click', () => { taskSortMode = 'time'; $('sortTimeBtn').classList.add('active'); $('sortComplexityBtn').classList.remove('active'); renderKanban(); });
-
   $('addNoteBtn').addEventListener('click', addNote);
   $('noteInput').addEventListener('keydown', e => { if(e.key === 'Enter') addNote(); });
 
@@ -1945,27 +1370,11 @@
   $('googleConnectBtn').addEventListener('click', connectGoogleCalendar);
   $('googleRefreshBtn').addEventListener('click', () => syncGoogleAgenda(false));
   $('agendaHelpToggle').addEventListener('click', () => { $('agendaHelpPanel').classList.toggle('open'); });
-  $('addColumnToggleBtn').addEventListener('click', () => {
-    const form = $('addColumnForm');
-    const isHidden = form.style.display === 'none' || form.style.display === '';
-    form.style.display = isHidden ? 'flex' : 'none';
-    if(isHidden) $('newColumnName').focus();
-  });
-  $('confirmAddColumnBtn').addEventListener('click', addColumn);
-  $('newColumnName').addEventListener('keydown', e => { if(e.key === 'Enter') addColumn(); });
-
-  $('completedFilter').addEventListener('change', () => { $('completedDateFilter').value = ''; renderCompleted(); });
-  $('completedDateFilter').addEventListener('change', renderCompleted);
-  $('clearDateFilterBtn').addEventListener('click', () => { $('completedDateFilter').value = ''; renderCompleted(); });
-  $('historyToggleBtn').addEventListener('click', () => {
-    $('historyBody').classList.toggle('open');
-  });
 
   $('legendToggle').addEventListener('click', () => {
     $('legendPanel').classList.toggle('open');
     $('legendToggle').classList.toggle('open');
   });
-  $('notifToggleBtn').addEventListener('click', toggleNotifications);
   $('avatarWrap').addEventListener('click', () => {
     const body = document.querySelector('.baymax-body');
     body.classList.remove('wobble');
@@ -1974,122 +1383,21 @@
     showAvatarFunLine();
   });
 
+  $('noteModalCloseBtn').addEventListener('click', closeNoteModal);
+  $('noteModalSaveBtn').addEventListener('click', saveNoteModal);
+  $('noteModalDeleteBtn').addEventListener('click', deleteNoteModal);
+  $('noteModalOverlay').addEventListener('click', (e) => { if(e.target.id === 'noteModalOverlay') closeNoteModal(); });
+
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-action]');
     if(!el) return;
     const id = el.getAttribute('data-id');
-    const taskId = el.getAttribute('data-task-id');
-    const subId = el.getAttribute('data-sub-id');
     const action = el.getAttribute('data-action');
-    if(action === 'toggle-done') setTaskStatus(id, (state.tasks.find(t=>t.id===id) || {}).status === 'done' ? 'pending' : 'done');
-    if(action === 'move-inprogress') setTaskStatus(id, 'inprogress');
-    if(action === 'move-pending') setTaskStatus(id, 'pending');
-    if(action === 'move-done') setTaskStatus(id, 'done');
-    if(action === 'reopen-task') setTaskStatus(id, 'pending');
-    if(action === 'delete-task') deleteTask(id);
-    if(action === 'edit-task') editTask(id);
-    if(action === 'save-task') saveTaskEdit(id);
-    if(action === 'cancel-edit-task') cancelEditTask();
     if(action === 'delete-note') deleteNote(id);
-    if(action === 'edit-note') editNote(id);
-    if(action === 'save-note') saveNoteEdit(id);
-    if(action === 'cancel-edit-note') cancelEditNote();
+    if(action === 'open-note') openNoteModal(id);
     if(action === 'delete-agenda') deleteAgenda(id);
-    if(action === 'stop-recurring') stopRecurring(id);
-    if(action === 'toggle-subtask') toggleSubtask(taskId, subId);
-    if(action === 'delete-subtask') deleteSubtask(taskId, subId);
-    if(action === 'add-subtask') addSubtask(taskId);
-    if(action === 'edit-subtask') editSubtask(taskId, subId);
-    if(action === 'save-subtask') saveSubtaskEdit(taskId, subId);
-    if(action === 'cancel-edit-subtask') cancelEditSubtask();
-    if(action === 'toggle-checklist') toggleChecklist(taskId);
-    if(action === 'send-google') sendTaskToGoogleCalendar(id);
-    if(action === 'create-task-from-agenda') createTaskFromAgenda(id);
     if(action === 'toggle-agenda-details') toggleAgendaDetails(id);
-    if(action === 'delete-column') deleteColumn(el.getAttribute('data-col-id'));
-  });
-
-  document.addEventListener('change', (e) => {
-    if(e.target.classList && e.target.classList.contains('move-select') && e.target.value){
-      setTaskStatus(e.target.getAttribute('data-task-id'), e.target.value);
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter' && e.target.classList && e.target.classList.contains('subtask-input')){
-      addSubtask(e.target.id.replace('subtaskInput-', ''));
-    }
-  });
-
-  // drag & drop: cards between columns, and columns to reorder
-  function reorderColumn(draggedColId, targetColId){
-    if(draggedColId === targetColId) return;
-    const fromIndex = state.kanbanColumns.findIndex(c => c.id === draggedColId);
-    const toIndex = state.kanbanColumns.findIndex(c => c.id === targetColId);
-    if(fromIndex === -1 || toIndex === -1) return;
-    const [moved] = state.kanbanColumns.splice(fromIndex, 1);
-    state.kanbanColumns.splice(toIndex, 0, moved);
-    saveData();
-    renderKanbanSkeleton();
-    renderKanban();
-  }
-
-  document.addEventListener('dragstart', e => {
-    const header = e.target.closest('.kanban-col-header');
-    if(header){
-      const col = header.closest('.kanban-col');
-      e.dataTransfer.setData('application/x-kanban-column', col.getAttribute('data-col-id'));
-      e.dataTransfer.effectAllowed = 'move';
-      setTimeout(() => col.classList.add('col-dragging'), 0);
-      return;
-    }
-    const card = e.target.closest('.kanban-card');
-    if(!card) return;
-    e.dataTransfer.setData('text/plain', card.dataset.id);
-    e.dataTransfer.effectAllowed = 'move';
-    setTimeout(() => card.classList.add('dragging'), 0);
-  });
-  document.addEventListener('dragend', e => {
-    const card = e.target.closest('.kanban-card');
-    if(card) card.classList.remove('dragging');
-    document.querySelectorAll('.kanban-col.col-dragging').forEach(c => c.classList.remove('col-dragging'));
-    document.querySelectorAll('.kanban-col.col-drag-over').forEach(c => c.classList.remove('col-drag-over'));
-  });
-  document.addEventListener('dragover', e => {
-    const isColumnDrag = e.dataTransfer.types.includes('application/x-kanban-column');
-    if(isColumnDrag){
-      const col = e.target.closest('.kanban-col');
-      if(col){ e.preventDefault(); col.classList.add('col-drag-over'); }
-      return;
-    }
-    const colBody = e.target.closest('.kanban-col-body');
-    if(colBody){ e.preventDefault(); colBody.classList.add('drag-over'); }
-  });
-  document.addEventListener('dragleave', e => {
-    const col = e.target.closest('.kanban-col');
-    if(col) col.classList.remove('col-drag-over');
-    const colBody = e.target.closest('.kanban-col-body');
-    if(colBody) colBody.classList.remove('drag-over');
-  });
-  document.addEventListener('drop', e => {
-    const isColumnDrag = e.dataTransfer.types.includes('application/x-kanban-column');
-    if(isColumnDrag){
-      const col = e.target.closest('.kanban-col');
-      if(!col) return;
-      e.preventDefault();
-      col.classList.remove('col-drag-over');
-      const draggedColId = e.dataTransfer.getData('application/x-kanban-column');
-      const targetColId = col.getAttribute('data-col-id');
-      reorderColumn(draggedColId, targetColId);
-      return;
-    }
-    const colBody = e.target.closest('.kanban-col-body');
-    if(!colBody) return;
-    e.preventDefault();
-    colBody.classList.remove('drag-over');
-    const taskId = e.dataTransfer.getData('text/plain');
-    const status = colBody.getAttribute('data-status');
-    if(taskId && status) setTaskStatus(taskId, status);
+    if(action === 'create-task-from-agenda') createTaskFromAgenda(id);
   });
 
   // blink animation
@@ -2107,9 +1415,6 @@
     if(nowDate !== lastKnownDate){
       if(agendaFilterDate === lastKnownDate) setAgendaFilterDate(nowDate);
       lastKnownDate = nowDate;
-      notifiedTasks.clear();
-      ensureTodayRecurringInstances();
-      $('taskDate').value = nowDate;
       renderAll();
     } else {
       renderMood();
@@ -2117,18 +1422,10 @@
       renderAgenda();
     }
   }, 60000);
-  setInterval(checkTaskNotifications, 20000);
 
-  // init date field default
-  $('taskDate').value = todayStr();
+  // init do filtro de data da agenda
   agendaFilterDate = todayStr();
   $('agendaDateFilter').value = agendaFilterDate;
-
-  // sync notification button with existing browser permission
-  if('Notification' in window && Notification.permission === 'granted'){
-    notificationsEnabled = true;
-  }
-  updateNotifButton();
 
   // PWA service worker (only works when hosted, not on file://)
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
